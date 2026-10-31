@@ -6,6 +6,7 @@ const LOGO = "/brand/logo.png";
 const BEAR = "/brand/bear.png";
 
 export const EASE = [0.22, 1, 0.36, 1] as const;
+export const INTRO_MS = 7000;
 
 export function Logo({ className, onRed = true }: { className?: string; onRed?: boolean }) {
   return (
@@ -40,38 +41,82 @@ export function BearMark({ className }: { className?: string }) {
   );
 }
 
-export function LoadingScreen() {
+export function LoadingScreen({
+  fading = false,
+  intro = false,
+}: {
+  fading?: boolean;
+  intro?: boolean;
+}) {
   const reduce = useReducedMotion();
   return (
     <motion.div
-      exit={{ opacity: 0, transition: { duration: 0.4 } }}
-      className="pointer-events-none fixed inset-0 z-[100] grid place-items-center bg-hero grain"
+      animate={{ opacity: fading ? 0 : 1 }}
+      transition={{ duration: 0.7, ease: EASE }}
+      className="pointer-events-none fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-hero grain"
       role="status"
       aria-label="Loading Grizzly Pizzeria"
     >
-      <div className="flex flex-col items-center gap-6">
+      <motion.span
+        aria-hidden
+        className="absolute size-72 rounded-full bg-secondary/25 blur-2xl"
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={reduce ? { scale: 1, opacity: 0.7 } : { scale: [0.7, 1.15, 0.95], opacity: [0, 0.85, 0.55] }}
+        transition={reduce ? { duration: 0.6 } : { duration: 3.4, ease: EASE, repeat: Infinity, repeatType: "mirror" }}
+      />
+      <motion.span
+        aria-hidden
+        className="absolute size-48 rounded-full border border-secondary/50"
+        initial={{ scale: 0.4, opacity: 0 }}
+        animate={reduce ? { scale: 1, opacity: 0.4 } : { scale: [0.55, 1.35], opacity: [0.55, 0] }}
+        transition={reduce ? { duration: 0.6 } : { duration: 2.8, ease: EASE, repeat: Infinity }}
+      />
+      <div className="relative flex flex-col items-center gap-7 px-6">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={reduce ? { opacity: 1 } : { opacity: 1, y: [20, 0, -14, 0] }}
-          transition={{ duration: 1.2, ease: EASE, times: [0, 0.4, 0.7, 1] }}
+          initial={{ opacity: 0, scale: 0.72, y: 28 }}
+          animate={
+            reduce
+              ? { opacity: 1, scale: 1, y: 0 }
+              : { opacity: 1, scale: 1, y: [28, 0, -12, 0] }
+          }
+          transition={
+            reduce
+              ? { duration: 0.5, ease: EASE }
+              : { duration: 2.4, ease: EASE, times: [0, 0.45, 0.72, 1] }
+          }
         >
-          <BearMark className="h-36 w-auto drop-shadow-xl" />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
-          <Logo className="h-12" />
-        </motion.div>
-        <div className="h-1.5 w-40 overflow-hidden rounded-full bg-primary-deep/60">
           <motion.div
-            className="h-full rounded-full bg-secondary"
-            initial={{ width: "0%" }}
-            animate={{ width: "100%" }}
-            transition={{ duration: 1, ease: EASE }}
-          />
-        </div>
+            animate={reduce ? { y: 0 } : { y: [0, -8, 0] }}
+            transition={
+              reduce
+                ? { duration: 0.2 }
+                : { duration: 2.6, ease: EASE, repeat: Infinity, delay: 2.2 }
+            }
+          >
+            <BearMark className="h-40 w-auto drop-shadow-xl sm:h-48" />
+          </motion.div>
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: reduce ? 0.1 : 0.85, duration: 0.8, ease: EASE }}
+          className="flex flex-col items-center gap-3"
+        >
+          <Logo className="h-12 sm:h-14" />
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-secondary">
+            100% pure veg
+          </p>
+        </motion.div>
+        {intro && (
+          <div className="h-1.5 w-44 overflow-hidden rounded-full bg-primary-deep/50">
+            <motion.div
+              className="h-full rounded-full bg-secondary"
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ duration: INTRO_MS / 1000, ease: "linear" }}
+            />
+          </div>
+        )}
       </div>
     </motion.div>
   );

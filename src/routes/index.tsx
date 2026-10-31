@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Gift, MapPin, QrCode, ShoppingBag, Smile } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import heroPizza from "@/assets/hero-pizza.webp";
 import { Button } from "@/components/ui/button";
 import { BearMark, EASE, Reveal } from "@/components/brand";
@@ -9,7 +10,7 @@ import { WelcomeCrisp } from "@/components/shop/WelcomeCrisp";
 import { ShopLayout, seo } from "@/components/shop/ShopLayout";
 import { MenuCard } from "@/components/shop/MenuCard";
 import { OutletCard } from "@/components/shop/OutletCard";
-import { useDB, useSession } from "@/services/store";
+import { useDB, useSession, useStoreReady } from "@/services/store";
 import { selectOutlet } from "@/services/api";
 
 export const Route = createFileRoute("/")({
@@ -33,6 +34,56 @@ const POINTS = [
   "Fresh dough, made to order",
 ];
 
+function ReadyNotice({
+  orders,
+}: {
+  orders: { id: string; number: number; payment: string }[];
+}) {
+  const storeReady = useStoreReady();
+  const seen = useRef(new Set<string>());
+  const primed = useRef(false);
+
+  useEffect(() => {
+    if (!storeReady) return;
+    if (!primed.current) {
+      primed.current = true;
+      for (const order of orders) seen.current.add(order.id);
+      return;
+    }
+    for (const order of orders) {
+      if (seen.current.has(order.id)) continue;
+      seen.current.add(order.id);
+      toast.success(`Your order #${order.number} is ready`);
+    }
+  }, [orders, storeReady]);
+
+  if (!orders.length) return null;
+
+  return (
+    <div className="bg-secondary px-4 py-4 text-cocoa sm:px-6" role="status" aria-live="polite">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="font-display text-2xl font-bold sm:text-3xl">Your order is ready</p>
+          <p className="text-sm text-cocoa/80">
+            {orders.length === 1
+              ? `Order #${orders[0]?.number} is at the counter.`
+              : `${orders.length} orders are at the counter.`}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {orders.map((order) => (
+            <Button key={order.id} asChild>
+              <Link to="/order/$id" params={{ id: order.id }}>
+                {order.payment === "online" ? `Show QR · #${order.number}` : `View #${order.number}`}
+              </Link>
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const db = useDB();
   const s = useSession();
@@ -43,10 +94,14 @@ function Home() {
   const y1 = useTransform(scrollYProgress, [0, 1], [0, 140]);
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -80]);
   const favourites = db.menu.filter((m) => m.veg && m.badge === "Bestseller");
+  const readyOrders = s.phone
+    ? db.orders.filter((o) => o.phone === s.phone && o.status === "Ready")
+    : [];
 
   return (
     <ShopLayout>
       <WelcomeCrisp />
+      <ReadyNotice orders={readyOrders} />
       <section
         ref={ref}
         className="relative flex min-h-[calc(100svh-3.5rem)] items-center overflow-hidden bg-hero grain text-primary-foreground sm:min-h-[calc(100svh-4rem)]"
@@ -248,7 +303,7 @@ function Home() {
               {
                 icon: QrCode,
                 t: "Collect",
-                d: "Online orders show a QR. Pay at counter? Just say your number.",
+                d: "When the kitchen marks it ready, online orders get a QR. Counter orders use the number.",
               },
               { icon: Smile, t: "Enjoy", d: "Eat. Earn points. Repeat." },
             ].map((x, i) => (

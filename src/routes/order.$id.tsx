@@ -164,6 +164,14 @@ function OrderPage() {
                   </Button>
                 </div>
               </>
+            ) : o.payment === "online" ? (
+              <div className="py-10">
+                <p className="font-display text-5xl">#{o.number}</p>
+                <p className="mt-3 text-lg font-semibold">Your pickup QR is on its way.</p>
+                <p className="text-sm">
+                  It appears here when the kitchen marks this order ready.
+                </p>
+              </div>
             ) : (
               <div className="py-10">
                 <p className="font-display text-5xl">#{o.number}</p>

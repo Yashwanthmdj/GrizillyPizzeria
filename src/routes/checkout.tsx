@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, CreditCard, Landmark, Loader2, Smartphone, Store, Wallet, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EASE } from "@/components/brand";
@@ -12,7 +12,6 @@ import { AuthPanel } from "@/components/shop/AuthPanel";
 import { applyCoupon, clearCoupon, placeOrder, selectOutlet, setRedeem } from "@/services/api";
 import { billOptions, cartSubtotal, computeBill, inr, validateCoupon } from "@/services/pricing";
 import { canOrder } from "@/services/outlet-status";
-import { minutesPerOrder, waitForNewOrder } from "@/services/wait";
 import type { PaymentMethod } from "@/services/types";
 import { cn } from "@/lib/utils";
 
@@ -20,22 +19,12 @@ export const Route = createFileRoute("/checkout")({
   head: () =>
     seo(
       "Checkout · Grizzly Pizzeria",
-      "Choose pickup time, sign in and pay for your Grizzly Pizzeria order.",
+      "Choose an outlet, sign in and pay for your Grizzly Pizzeria order.",
     ),
   component: Checkout,
 });
 
 const STEPS = ["Pickup", "Details", "Payment"];
-
-function slots() {
-  const out: number[] = [];
-  const d = new Date();
-  d.setMinutes(Math.ceil((d.getMinutes() + 45) / 15) * 15, 0, 0);
-  for (let i = 0; i < 8; i++) out.push(d.getTime() + i * 15 * 6e4);
-  return out;
-}
-const fmtTime = (t: number) =>
-  new Date(t).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
 
 function Checkout() {
   const db = useDB();
@@ -43,18 +32,13 @@ function Checkout() {
   const nav = useNavigate();
   const me = db.customers.find((c) => c.phone === s.phone);
   const [step, setStep] = useState(0);
-  const [when, setWhen] = useState<"asap" | number>("asap");
   const [name, setName] = useState(me?.name ?? s.customerName ?? "");
   const phone = s.phone ?? "";
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("online");
   const [payOpen, setPayOpen] = useState(false);
-  const timeSlots = useMemo(slots, []);
   const outlet = db.outlets.find((o) => o.id === s.outletId);
-  const liveWait = outlet
-    ? waitForNewOrder(db.orders, outlet.id, minutesPerOrder(outlet))
-    : db.settings.defaultPrepMinutes;
   const reward = db.loyalty.steps.find((x) => x.id === s.redeemStepId) ?? null;
   const subtotal = cartSubtotal(s.cart);
   const found = db.coupons.find((c) => c.code === s.couponCode) ?? null;
@@ -97,7 +81,6 @@ function Checkout() {
         payment: method,
         name,
         notes: notes || undefined,
-        scheduledFor: when === "asap" ? undefined : when,
       });
       toast.success(`Order #${o.number} placed!`);
       nav({ to: "/order/$id", params: { id: o.id } });
@@ -172,19 +155,6 @@ function Checkout() {
                         ))}
                       </div>
                     </section>
-                    <section>
-                      <h2 className="text-2xl font-bold">When?</h2>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        <Chip on={when === "asap"} onClick={() => setWhen("asap")}>
-                          ASAP · ready in ~{liveWait} min
-                        </Chip>
-                        {timeSlots.map((t) => (
-                          <Chip key={t} on={when === t} onClick={() => setWhen(t)}>
-                            {fmtTime(t)}
-                          </Chip>
-                        ))}
-                      </div>
-                    </section>
                     <Button
                       size="lg"
                       disabled={!outlet || !canOrder(outlet)}
@@ -243,7 +213,7 @@ function Checkout() {
                         onClick={() => setPayment("online")}
                         icon={<Wallet />}
                         t="Pay online"
-                        d="Get a QR for express pickup"
+                        d="QR appears when the kitchen marks it ready"
                       />
                       <PayOpt
                         on={payment === "counter"}
@@ -299,7 +269,7 @@ function Checkout() {
           <aside className="h-fit rounded-3xl bg-card p-5 shadow-warm md:sticky md:top-24">
             <h2 className="text-xl font-bold">Summary</h2>
             <p className="text-sm text-muted-foreground">
-              {outlet?.short ?? "No outlet"} · {when === "asap" ? "ASAP" : fmtTime(when)}
+              {outlet?.short ?? "No outlet"}
             </p>
             <div className="my-4">
               <BillLines lines={s.cart} />
@@ -547,7 +517,7 @@ function PayModal({
                 )}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
-                Pickup QR is issued as soon as this payment confirms.
+                Demo payment. Your pickup QR appears when the kitchen marks the order ready.
               </p>
             </div>
           </motion.div>

@@ -13,7 +13,7 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportError } from "../lib/report-error";
-import { LoadingScreen } from "@/components/brand";
+import { INTRO_MS, LoadingScreen } from "@/components/brand";
 
 function NotFoundComponent() {
   return (
@@ -132,7 +132,7 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
-const LOADER_MS = 1100;
+const LOADER_MS = INTRO_MS;
 let hideLoader = () => {};
 let loaderStarted = 0;
 
@@ -143,20 +143,26 @@ if (typeof window !== "undefined" && !loaderStarted) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  // Brief branded loader so the first paint isn't an empty shell. The timer is
-  // module-scoped so a strict-mode remount cannot cancel the only dismiss path.
+  // Branded intro, about 7 seconds. The timer is module-scoped so a strict-mode
+  // remount cannot cancel the only dismiss path.
   const [ready, setReady] = useState(false);
+  const [fading, setFading] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
   useEffect(() => {
     setReady(true);
-    hideLoader = () => setShowLoader(false);
+    hideLoader = () => setFading(true);
     if (loaderStarted && Date.now() - loaderStarted >= LOADER_MS) hideLoader();
   }, []);
+  useEffect(() => {
+    if (!fading) return;
+    const t = window.setTimeout(() => setShowLoader(false), 700);
+    return () => window.clearTimeout(t);
+  }, [fading]);
 
   return (
     <QueryClientProvider client={queryClient}>
       {ready && <Outlet />}
-      {showLoader && <LoadingScreen />}
+      {showLoader && <LoadingScreen intro fading={fading} />}
       <Toaster
         position="top-center"
         toastOptions={{

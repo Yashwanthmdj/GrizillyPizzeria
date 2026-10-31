@@ -660,7 +660,6 @@ export async function placeOrder(
       ...bill,
       payment: input.payment,
       paid: input.payment === "online",
-      ...(input.payment === "online" ? { qrToken: uid() + uid() } : {}),
       status: "Placed",
       history: [{ status: "Placed", at: now }],
       createdAt: now,
@@ -691,15 +690,21 @@ export async function placeOrder(
   });
 }
 
+/** Online pickup QR is created only once the kitchen marks the order ready. */
+function issuePickupQr(order: Order): Order {
+  if (order.status !== "Ready" || order.payment !== "online" || order.qrToken) return order;
+  return { ...order, qrToken: uid() + uid() };
+}
+
 function syncOrderStatus(order: Order): Order {
   const lines = order.lines;
-  if (!lines.length) return order;
+  if (!lines.length) return issuePickupQr(order);
   if (lines.every((l) => l.lineStatus === "collected")) {
     return { ...order, status: "Collected", qrUsed: true, paid: true };
   }
   const open = lines.filter((l) => l.lineStatus !== "collected");
   if (open.length && open.every((l) => l.lineStatus === "ready")) {
-    return { ...order, status: "Ready", qrUsed: false };
+    return issuePickupQr({ ...order, status: "Ready", qrUsed: false });
   }
   if (lines.some((l) => l.lineStatus === "preparing" || l.lineStatus === "ready")) {
     if (order.status === "Placed" || order.status === "Accepted") return { ...order, status: "Preparing" };
@@ -737,13 +742,13 @@ export async function setOrderStatus(auth: AuthSession | null, id: string, statu
           : l,
       );
     }
-    const next: Order = {
+    const next: Order = issuePickupQr({
       ...current,
       status,
       lines,
       rejectReason: reason ?? current.rejectReason,
       history: [...current.history, { status, at: now }],
-    };
+    });
     await saveOrder(next);
     await stamp(auth?.staffName ?? "Staff", "order.status", `#${next.number} → ${status}${reason ? ` (${reason})` : ""}`);
     return next;
