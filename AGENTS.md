@@ -20,14 +20,14 @@ New pages:
 
 ## Data and money
 
-Components talk to `src/services/api.ts` only. Do not read `localStorage` from a component. Prices, tax, packaging, coupons and loyalty go through `src/services/pricing.ts`.
+Components talk to `src/services/api.ts` only. Do not read `localStorage` from a component. Prices, tax, packaging, coupons and loyalty go through `src/services/pricing.ts`. Persistent data lives in SQLite (`src/server`). Staff and customer passwords are scrypt hashes; sessions are encrypted cookies.
 
 ## Brand
 
-Tokens stay in `src/styles.css`: Grizzly Red `#AF2225`, Beige `#EEC6A2`, Cream `#FBF3EA`, Deep Red `#7E1519`, Cocoa `#2A1412`, Soft Beige `#F6E3D0`. Fredoka for headings, DM Sans for body. Motion uses ease `[0.22, 1, 0.36, 1]` and respects `prefers-reduced-motion`. Money is shown in Rs.
+Tokens stay in `src/styles.css`: Grizzly Red `#AF2225`, Beige `#EEC6A2`, Cream `#FBF3EA`, Deep Red `#7E1519`, Cocoa `#2A1412`, Soft Beige `#F6E3D0`. Unbounded for headings, Outfit for body. Motion uses ease `[0.22, 1, 0.36, 1]` and respects `prefers-reduced-motion`. Money is shown in Rs.
 
 Logo files: `public/brand/logo.png` and `public/brand/bear.png`.
 
-## Demo boundaries
+## Integration markers
 
-Online payment and WhatsApp stay labelled demo until a real provider is wired. Mark future work with `// INTEGRATION:`.
+Mark unfinished provider wiring with `// INTEGRATION:` (payments, SMS, object storage).

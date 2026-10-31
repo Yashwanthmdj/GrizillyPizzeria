@@ -8,17 +8,11 @@ import { EASE } from "@/components/brand";
 import { ShopLayout, seo } from "@/components/shop/ShopLayout";
 import { BillLines, Row } from "@/components/shop/Bill";
 import { useDB, useSession } from "@/services/store";
-import {
-  applyCoupon,
-  clearCoupon,
-  placeOrder,
-  selectOutlet,
-  sendOtp,
-  setRedeem,
-  verifyOtp,
-} from "@/services/api";
+import { AuthPanel } from "@/components/shop/AuthPanel";
+import { applyCoupon, clearCoupon, placeOrder, selectOutlet, setRedeem } from "@/services/api";
 import { billOptions, cartSubtotal, computeBill, inr, validateCoupon } from "@/services/pricing";
 import { canOrder } from "@/services/outlet-status";
+import { minutesPerOrder, waitForNewOrder } from "@/services/wait";
 import type { PaymentMethod } from "@/services/types";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +20,7 @@ export const Route = createFileRoute("/checkout")({
   head: () =>
     seo(
       "Checkout · Grizzly Pizzeria",
-      "Choose pickup time, verify your phone and pay for your Grizzly Pizzeria order.",
+      "Choose pickup time, sign in and pay for your Grizzly Pizzeria order.",
     ),
   component: Checkout,
 });
@@ -50,16 +44,17 @@ function Checkout() {
   const me = db.customers.find((c) => c.phone === s.phone);
   const [step, setStep] = useState(0);
   const [when, setWhen] = useState<"asap" | number>("asap");
-  const [name, setName] = useState(me?.name ?? "");
-  const [phone, setPhone] = useState(s.phone ?? "");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
+  const [name, setName] = useState(me?.name ?? s.customerName ?? "");
+  const phone = s.phone ?? "";
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("online");
   const [payOpen, setPayOpen] = useState(false);
   const timeSlots = useMemo(slots, []);
   const outlet = db.outlets.find((o) => o.id === s.outletId);
+  const liveWait = outlet
+    ? waitForNewOrder(db.orders, outlet.id, minutesPerOrder(outlet))
+    : db.settings.defaultPrepMinutes;
   const reward = db.loyalty.steps.find((x) => x.id === s.redeemStepId) ?? null;
   const subtotal = cartSubtotal(s.cart);
   const found = db.coupons.find((c) => c.code === s.couponCode) ?? null;
@@ -78,6 +73,19 @@ function Checkout() {
           <Button asChild className="mt-6">
             <Link to="/menu">Browse menu</Link>
           </Button>
+        </div>
+      </ShopLayout>
+    );
+
+  if (!s.phone)
+    return (
+      <ShopLayout>
+        <div className="mx-auto max-w-md px-4 py-12 sm:px-6">
+          <h1 className="text-3xl font-bold sm:text-4xl">Sign in to order</h1>
+          <p className="mt-2 text-muted-foreground">Sign in or create an account to place your order.</p>
+          <div className="mt-6 rounded-3xl bg-card p-5 shadow-warm">
+            <AuthPanel defaultName={name} onDone={() => setName((n) => n || name)} />
+          </div>
         </div>
       </ShopLayout>
     );
@@ -106,7 +114,7 @@ function Checkout() {
   return (
     <ShopLayout>
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        <h1 className="text-4xl font-bold sm:text-5xl">Checkout</h1>
+        <h1 className="text-3xl font-bold sm:text-5xl">Checkout</h1>
         <div className="mt-6" aria-label={`Step ${step + 1} of 3`}>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <motion.div
@@ -115,7 +123,7 @@ function Checkout() {
               transition={{ ease: EASE, duration: 0.5 }}
             />
           </div>
-          <ol className="mt-2 flex justify-between text-sm font-semibold">
+          <ol className="mt-2 flex justify-between gap-1 text-xs font-semibold sm:text-sm">
             {STEPS.map((x, i) => (
               <li key={x} className={i <= step ? "text-primary" : "text-muted-foreground"}>
                 {i + 1}. {x}
@@ -124,8 +132,8 @@ function Checkout() {
           </ol>
         </div>
 
-        <div className="mt-8 grid gap-6 md:grid-cols-[1fr_340px]">
-          <div className="rounded-3xl bg-card p-5 shadow-warm sm:p-7">
+        <div className="mt-8 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,340px)]">
+            <div className="min-w-0 rounded-3xl bg-card p-4 shadow-warm sm:p-7">
             <AnimatePresence mode="wait">
               <motion.div
                 key={step}
@@ -155,7 +163,7 @@ function Checkout() {
                             <p className="font-semibold">{o.short}</p>
                             <p className="text-xs text-muted-foreground">
                               {canOrder(o)
-                                ? `~${o.waitMinutes} min wait`
+                                ? `~${o.waitMinutes} min (${o.queueLength ?? 0} in queue)`
                                 : o.pauseOrders
                                   ? "Orders paused"
                                   : "Closed now"}
@@ -168,7 +176,7 @@ function Checkout() {
                       <h2 className="text-2xl font-bold">When?</h2>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <Chip on={when === "asap"} onClick={() => setWhen("asap")}>
-                          ASAP · ~{outlet?.waitMinutes || db.settings.defaultPrepMinutes} min
+                          ASAP · ready in ~{liveWait} min
                         </Chip>
                         {timeSlots.map((t) => (
                           <Chip key={t} on={when === t} onClick={() => setWhen(t)}>
@@ -197,66 +205,12 @@ function Checkout() {
                         autoComplete="name"
                       />
                     </Field>
-                    <Field label="Phone number">
-                      <div className="flex gap-2">
-                        <input
-                          value={phone}
-                          onChange={(e) => {
-                            setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
-                            setOtpSent(false);
-                          }}
-                          inputMode="numeric"
-                          placeholder="10-digit mobile"
-                          className={inputCls}
-                          autoComplete="tel"
-                        />
-                        {verified ? (
-                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success px-3 text-sm font-semibold text-success-foreground">
-                            <Check className="size-4" /> Verified
-                          </span>
-                        ) : (
-                          <Button
-                            variant="secondary"
-                            disabled={phone.length !== 10 || busy}
-                            onClick={async () => {
-                              setBusy(true);
-                              const r = await sendOtp(phone);
-                              setBusy(false);
-                              setOtpSent(true);
-                              toast(r.hint);
-                            }}
-                          >
-                            {otpSent ? "Resend" : "Send OTP"}
-                          </Button>
-                        )}
-                      </div>
-                    </Field>
-                    {otpSent && !verified && (
-                      <Field label="Enter OTP (demo: 1234)">
-                        <div className="flex gap-2">
-                          <input
-                            value={otp}
-                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                            inputMode="numeric"
-                            className={cn(inputCls, "tracking-[0.5em]")}
-                          />
-                          <Button
-                            disabled={otp.length !== 4 || busy}
-                            onClick={async () => {
-                              setBusy(true);
-                              try {
-                                await verifyOtp(phone, otp, name);
-                                toast.success("Phone verified");
-                              } catch (e) {
-                                toast.error((e as Error).message);
-                              }
-                              setBusy(false);
-                            }}
-                          >
-                            Verify
-                          </Button>
-                        </div>
-                      </Field>
+                    {verified ? (
+                      <p className="flex items-center gap-2 text-sm font-semibold text-success">
+                        <Check className="size-4" /> Signed in as {phone}
+                      </p>
+                    ) : (
+                      <AuthPanel defaultName={name} onDone={() => setName((n) => n || name)} />
                     )}
                     <Field label="Notes for the kitchen (optional)">
                       <textarea
@@ -397,7 +351,7 @@ function Checkout() {
               <Row k={`GST (${db.settings.taxPercent}%)`} v={inr(bill.tax)} />
               <Row k="Total" v={inr(bill.total)} bold />
               <p className="mt-1 text-xs text-muted-foreground">
-                You'll earn {bill.pointsEarned} points on pickup. Online pay is a demo.
+                You'll earn {bill.pointsEarned} points on pickup.
               </p>
               {short > 0 && (
                 <p className="mt-2 text-sm font-semibold text-primary">
@@ -506,7 +460,7 @@ function PayModal({
           <motion.div
             role="dialog"
             aria-modal="true"
-            aria-label="Demo payment"
+            aria-label="Online payment"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0 }}
@@ -515,8 +469,8 @@ function PayModal({
           >
             <div className="flex items-center justify-between bg-cocoa px-5 py-4 text-cream">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-warning">
-                  Demo · no real payment
+                <p className="text-xs font-bold uppercase tracking-widest text-secondary">
+                  Pay online
                 </p>
                 <p className="font-display text-2xl">{inr(amount)}</p>
               </div>
@@ -551,18 +505,18 @@ function PayModal({
             </div>
             <div className="space-y-3 p-5">
               {tab === "upi" && (
-                <input defaultValue="grizzlyfan@upi" aria-label="UPI ID" className={inputCls} />
+                <input placeholder="yourname@upi" aria-label="UPI ID" className={inputCls} />
               )}
               {tab === "card" && (
                 <>
                   <input
-                    defaultValue="4111 1111 1111 1111"
+                    placeholder="Card number"
                     aria-label="Card number"
                     className={inputCls}
                   />
                   <div className="flex gap-2">
-                    <input defaultValue="12/29" aria-label="Expiry" className={inputCls} />
-                    <input defaultValue="123" aria-label="CVV" className={inputCls} />
+                    <input placeholder="MM/YY" aria-label="Expiry" className={inputCls} />
+                    <input placeholder="CVV" aria-label="CVV" className={inputCls} />
                   </div>
                 </>
               )}
@@ -589,11 +543,11 @@ function PayModal({
                     <Loader2 className="animate-spin" /> Processing…
                   </>
                 ) : (
-                  `Pay ${inr(amount)} (simulated)`
+                  `Pay ${inr(amount)}`
                 )}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
-                Nothing is charged. This is a demo checkout.
+                Pickup QR is issued as soon as this payment confirms.
               </p>
             </div>
           </motion.div>

@@ -6,10 +6,10 @@ export const Route = createFileRoute("/terms")({
   head: () => seo("Terms · Grizzly Pizzeria", "Placeholder terms for Grizzly Pizzeria.", "/terms"),
   component: () => (
     <LegalLayout title="Terms">
-      <p>Placeholder text, to be replaced by the approved policy.</p>
       <p>
-        Orders are for pickup from the Madhapur outlet you choose. Online payment in this demo does
-        not charge a card.
+        Orders are for pickup from the Madhapur outlet you choose. Wait times are estimates based on
+        who is clocked in and what is already in the ovens. Individual items can be collected as
+        they are ready.
       </p>
       <p>Menu prices, wait times and loyalty rules can change from the owner dashboard.</p>
     </LegalLayout>

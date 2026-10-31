@@ -99,17 +99,14 @@ export function Reveal({
   );
 }
 
-export function VegDot({ veg }: { veg: boolean }) {
+export function VegDot({ veg = true }: { veg?: boolean }) {
   return (
     <span
-      className={cn(
-        "inline-grid size-4 shrink-0 place-items-center rounded-[4px] border-2",
-        veg ? "border-success" : "border-primary",
-      )}
-      title={veg ? "Vegetarian" : "Non-vegetarian"}
+      className="inline-grid size-4 shrink-0 place-items-center rounded-[4px] border-2 border-success"
+      title="Vegetarian"
     >
-      <span className={cn("size-1.5 rounded-full", veg ? "bg-success" : "bg-primary")} />
-      <span className="sr-only">{veg ? "Veg" : "Non-veg"}</span>
+      <span className="size-1.5 rounded-full bg-success" />
+      <span className="sr-only">{veg ? "Vegetarian" : "Vegetarian kitchen"}</span>
     </span>
   );
 }

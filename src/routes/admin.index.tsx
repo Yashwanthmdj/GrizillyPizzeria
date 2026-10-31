@@ -71,7 +71,7 @@ function Insights() {
         <div>
           <h1 className="text-4xl">Insights</h1>
           <p className="text-sm text-muted-foreground">
-            Both Madhapur outlets. Payments here are demo figures.
+            Both Madhapur outlets.
           </p>
         </div>
         <button

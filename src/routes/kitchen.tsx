@@ -11,6 +11,7 @@ export const Route = createFileRoute("/kitchen")({
       nav={[
         { to: "/kitchen", label: "Live orders" },
         { to: "/kitchen/scan", label: "Scan QR" },
+        { to: "/kitchen/staff", label: "Crew" },
         { to: "/kitchen/menu", label: "Menu" },
         { to: "/kitchen/settings", label: "Settings" },
       ]}

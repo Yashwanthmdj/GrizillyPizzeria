@@ -1,7 +1,7 @@
 export type ID = string;
-export type Category = "Pizzas" | "Sides" | "Drinks" | "Desserts" | "Combos";
-export const CATEGORIES: Category[] = ["Pizzas", "Sides", "Drinks", "Desserts", "Combos"];
-export type SizeKey = "Regular" | "Medium" | "Large";
+export type Category = "Pizzas" | "Sandwiches" | "Garlic Bread" | "Fries" | "Dips";
+export const CATEGORIES: Category[] = ["Pizzas", "Sandwiches", "Garlic Bread", "Fries", "Dips"];
+export type SizeKey = "Regular" | "Small" | "Medium" | "Large";
 
 export interface Outlet {
   id: ID;
@@ -13,8 +13,16 @@ export interface Outlet {
   closeHour: number;
   mapUrl: string;
   phone: string;
+  /** Live pickup estimate for the next customer (queue × minutes per order). */
   waitMinutes: number;
+  /** Kitchen-set minutes for one order. */
+  minutesPerOrder?: number | undefined;
+  fallbackWaitMinutes?: number | undefined;
+  queueLength?: number | undefined;
+  cooksOnFloor?: number | undefined;
   isOpen: boolean;
+  /** Kitchen/owner override — stay open outside printed hours. */
+  forceOpen?: boolean | undefined;
   pauseOrders: boolean;
 }
 
@@ -37,10 +45,15 @@ export interface MenuItem {
   toppings?: Topping[] | undefined;
   availability: Record<ID, boolean>;
   priceOverride: Record<ID, number | undefined>;
+  /** Kept on the item record; wait is order-queue × minutesPerOrder, not per item. */
+  prepMinutes: number;
 }
+
+export type LineStatus = "queued" | "preparing" | "ready" | "collected";
 
 export interface CartLine {
   key: string;
+  lineId: string;
   itemId: ID;
   name: string;
   image: string;
@@ -50,6 +63,12 @@ export interface CartLine {
   note?: string | undefined;
   unitPrice: number;
   qty: number;
+  prepMinutes: number;
+  lineStatus: LineStatus;
+  startedAt?: number | undefined;
+  readyAt?: number | undefined;
+  collectedAt?: number | undefined;
+  etaAt?: number | undefined;
 }
 
 export type OrderStatus = "Placed" | "Accepted" | "Preparing" | "Ready" | "Collected" | "Rejected";
@@ -76,6 +95,7 @@ export interface Order {
   paid: boolean;
   qrToken?: string | undefined;
   qrUsed?: boolean | undefined;
+  waitMinutes?: number | undefined;
   status: OrderStatus;
   history: { status: OrderStatus; at: number }[];
   rejectReason?: string | undefined;
@@ -87,6 +107,7 @@ export interface Order {
 
 export interface Customer {
   phone: string;
+  username?: string | undefined;
   name: string;
   points: number;
   lifetimePoints: number;
@@ -95,6 +116,26 @@ export interface Customer {
   email?: string | undefined;
   lastVisit?: number | undefined;
   history: { at: number; delta: number; label: string }[];
+}
+
+export type WorkerRole = "cook" | "counter";
+
+export interface KitchenWorker {
+  id: ID;
+  outletId: ID;
+  name: string;
+  phone?: string | undefined;
+  role: WorkerRole;
+  active: boolean;
+}
+
+export interface AttendanceRecord {
+  id: ID;
+  workerId: ID;
+  outletId: ID;
+  workerName: string;
+  clockIn: number;
+  clockOut?: number | undefined;
 }
 
 export interface RewardStep {
@@ -173,6 +214,8 @@ export interface DB {
   audit: AuditEntry[];
   messages: ContactMessage[];
   staff: Staff[];
+  workers: KitchenWorker[];
+  attendance: AttendanceRecord[];
   nextNumber: number;
 }
 
@@ -180,6 +223,7 @@ export interface Session {
   outletId: ID | null;
   cart: CartLine[];
   phone: string | null;
+  customerName: string | null;
   staff: Staff | null;
   myOrders: ID[];
   redeemStepId: ID | null;

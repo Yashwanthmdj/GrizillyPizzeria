@@ -12,9 +12,9 @@ const Confetti = lazy(() =>
   import("@/components/shop/Confetti").then((m) => ({ default: m.Confetti })),
 );
 import { useDB } from "@/services/store";
-import { setOrderStatus } from "@/services/api";
 import { inr } from "@/services/pricing";
-import { STATUS_FLOW, type Order, type OrderStatus } from "@/services/types";
+import { minutesPerOrder, waitForOrder } from "@/services/wait";
+import type { Order, OrderStatus } from "@/services/types";
 
 export const Route = createFileRoute("/order/$id")({
   head: () => ({
@@ -37,15 +37,6 @@ const MSG: Record<OrderStatus, (o: Order) => string> = {
   Rejected: (o) => `😔 Sorry, order #${o.number} couldn't be accepted: ${o.rejectReason ?? ""}`,
 };
 
-function useCountdown(target: number) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  const ms = Math.max(0, target - now);
-  return `${Math.floor(ms / 6e4)}:${String(Math.floor((ms % 6e4) / 1000)).padStart(2, "0")}`;
-}
 
 function OrderPage() {
   const { id } = Route.useParams();
@@ -61,8 +52,6 @@ function OrderPage() {
     }
     prev.current = o?.status;
   }, [o?.status, o]);
-  const countdown = useCountdown(o?.promisedAt ?? 0);
-
   if (!o)
     return (
       <ShopLayout>
@@ -76,8 +65,11 @@ function OrderPage() {
     );
   const outlet = db.outlets.find((x) => x.id === o.outletId);
   const live = !["Collected", "Rejected"].includes(o.status);
-  const nextStatus = STATUS_FLOW[STATUS_FLOW.indexOf(o.status) + 1];
+  const perOrder = minutesPerOrder(outlet);
+  const readyIn = waitForOrder(db.orders, o.outletId, o.id, perOrder);
+  const showQr = o.payment === "online" && !!o.qrToken;
   const qrValue = JSON.stringify({ id: o.id, o: o.outletId, t: o.qrToken });
+  const leftover = o.lines.filter((l) => l.lineStatus !== "collected");
 
   return (
     <ShopLayout>
@@ -91,7 +83,11 @@ function OrderPage() {
         title={`Order #${o.number}`}
         sub={
           live
-            ? `Ready around ${new Date(o.promisedAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}`
+            ? o.status === "Ready"
+              ? showQr
+                ? "Ready now — show your QR at the counter"
+                : "Ready now — tell them your order number"
+              : `Order will be ready in ${readyIn} min`
             : `Status: ${o.status}`
         }
       />
@@ -100,26 +96,43 @@ function OrderPage() {
           <div className="flex flex-wrap items-center gap-3 rounded-3xl bg-cocoa p-5 text-cream">
             <Timer className="size-8 text-secondary" />
             <div className="flex-1">
-              <p className="text-sm text-cream/70">Estimated ready in</p>
+              <p className="text-sm text-cream/70">
+                {o.status === "Ready" ? "Status" : "Order will be ready in"}
+              </p>
               <p className="font-display text-4xl tabular-nums" aria-live="polite">
-                {countdown}
+                {o.status === "Ready" ? "Ready" : `${readyIn} min`}
               </p>
             </div>
-            {nextStatus && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setOrderStatus(o.id, nextStatus)}
-              >
-                Demo: advance to {nextStatus}
-              </Button>
-            )}
+            {o.status !== "Ready" ? (
+              <p className="text-sm text-cream/70">
+                {perOrder} min per order · updates as the queue moves
+              </p>
+            ) : null}
           </div>
         )}
         <OrderTracker order={o} />
+        <ul className="grid gap-2 rounded-3xl bg-card p-5 shadow-warm sm:grid-cols-2">
+          {o.lines.map((l) => (
+            <li key={l.lineId || l.key} className="flex items-center justify-between gap-2 text-sm">
+              <span>
+                {l.qty}× {l.name}
+                {l.size ? ` (${l.size})` : ""}
+              </span>
+              <span className="font-semibold capitalize">
+                {l.lineStatus === "ready"
+                  ? showQr
+                    ? "Ready — show QR"
+                    : "Ready — pay at counter"
+                  : l.lineStatus === "collected"
+                    ? "Handed over"
+                    : l.lineStatus}
+              </span>
+            </li>
+          ))}
+        </ul>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="ticket rounded-3xl bg-secondary p-6 text-center text-cocoa shadow-warm">
-            {o.payment === "online" && o.qrToken ? (
+            {showQr ? (
               <>
                 <p className="text-sm font-bold uppercase tracking-widest text-primary-deep">
                   Show this at the counter
@@ -136,7 +149,11 @@ function OrderPage() {
                 </div>
                 <p className="mt-3 font-display text-3xl">#{o.number}</p>
                 <p className="text-sm">
-                  {o.qrUsed ? "This QR has been used ✓" : "Single-use · valid for this order only"}
+                  {leftover.length
+                    ? leftover.some((l) => l.lineStatus === "ready")
+                      ? "Show this for items that are ready. Come back for the rest."
+                      : "Kitchen is still on it — QR works as soon as something is ready."
+                    : "All items handed over ✓"}
                 </p>
                 <div className="mt-4 flex justify-center gap-2">
                   <Button size="sm" onClick={() => downloadQR(o.number)}>
@@ -160,7 +177,7 @@ function OrderPage() {
             <p className="text-xs text-muted-foreground">
               {new Date(o.createdAt).toLocaleString("en-IN")} ·{" "}
               {o.payment === "online"
-                ? "Paid online (demo)"
+                ? "Paid online"
                 : o.paid
                   ? "Paid at counter"
                   : "To pay at counter"}
@@ -193,7 +210,7 @@ function OrderPage() {
                 size="sm"
                 variant="success"
                 onClick={() =>
-                  toast("Bill shared on WhatsApp (simulated)", {
+                  toast("Opening WhatsApp", {
                     description: "Nothing was actually sent.",
                   })
                 }

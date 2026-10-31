@@ -30,7 +30,7 @@ function CartPage() {
   return (
     <ShopLayout>
       <PageHead title="Your box" />
-      <div className="mx-auto grid max-w-5xl gap-6 px-4 py-10 sm:px-6 md:grid-cols-[1fr_320px]">
+      <div className="mx-auto grid max-w-5xl gap-6 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,320px)]">
         <ul className="space-y-3">
           {s.cart.length === 0 && (
             <li className="rounded-3xl bg-card p-10 text-center shadow-warm">
@@ -41,12 +41,12 @@ function CartPage() {
             </li>
           )}
           {s.cart.map((l) => (
-            <li key={l.key} className="flex gap-4 rounded-3xl bg-card p-4 shadow-warm">
-              <Img src={l.image} alt={l.name} className="size-20 rounded-2xl" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
+            <li key={l.key} className="flex min-w-0 gap-3 rounded-3xl bg-card p-4 shadow-warm sm:gap-4">
+              <Img src={l.image} alt={l.name} className="size-16 shrink-0 rounded-2xl sm:size-20" />
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-2">
                   <VegDot veg={l.veg} />
-                  <p className="font-semibold">{l.name}</p>
+                  <p className="truncate font-semibold">{l.name}</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {[l.size, ...l.toppings].filter(Boolean).join(" · ")}

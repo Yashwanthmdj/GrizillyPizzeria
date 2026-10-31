@@ -11,6 +11,7 @@ const step = rule.steps[0]!;
 const lines: CartLine[] = [
   {
     key: "a",
+    lineId: "ln_a",
     itemId: "m1",
     name: "Pie",
     image: "",
@@ -18,6 +19,8 @@ const lines: CartLine[] = [
     toppings: [],
     unitPrice: 1000,
     qty: 1,
+    prepMinutes: 16,
+    lineStatus: "queued",
   },
 ];
 const coupon: Coupon = {

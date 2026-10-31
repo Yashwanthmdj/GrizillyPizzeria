@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, BellOff, Plus } from "lucide-react";
+import { Bell, BellOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,19 +8,15 @@ import { VegDot } from "@/components/brand";
 import { SyncBadge } from "@/components/staff/SyncBadge";
 import { useKitchenOutletId } from "@/components/staff/StaffShell";
 import { useDB } from "@/services/store";
-import { setOrderStatus, simulateOrder } from "@/services/api";
+import { setLineReady, setOrderStatus, updateOutlet } from "@/services/api";
 import { inr } from "@/services/pricing";
+import { canOrder, isOpenNow } from "@/services/outlet-status";
+import { clockedInCount, liveQueue, minutesPerOrder, waitForOrder } from "@/services/wait";
 import type { Order, OrderStatus } from "@/services/types";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/kitchen/")({ component: Board });
 
-const COLS: { status: OrderStatus; title: string }[] = [
-  { status: "Placed", title: "New" },
-  { status: "Accepted", title: "Accepted" },
-  { status: "Preparing", title: "Preparing" },
-  { status: "Ready", title: "Ready" },
-];
 const REASONS = ["Out of ingredients", "Kitchen overloaded", "Closing soon", "Suspicious order"];
 
 function beep() {
@@ -56,11 +52,12 @@ function Board() {
   const [sound, setSound] = useState(true);
   const [alert, setAlert] = useState<number | null>(null);
   const now = useNow();
-  const orders = db.orders.filter(
-    (o) =>
-      o.outletId === outletId && ["Placed", "Accepted", "Preparing", "Ready"].includes(o.status),
-  );
+  const orders = liveQueue(db.orders, outletId);
   const newCount = orders.filter((o) => o.status === "Placed").length;
+  const cooks = clockedInCount(db.workers, db.attendance, outletId);
+  const outlet = db.outlets.find((o) => o.id === outletId);
+  const perOrder = minutesPerOrder(outlet);
+  const takingOrders = outlet ? canOrder(outlet) : false;
   const seen = useRef<Set<string>>(new Set(orders.map((o) => o.id)));
 
   useEffect(() => {
@@ -90,12 +87,66 @@ function Board() {
           </motion.div>
         )}
       </AnimatePresence>
+      {outlet && !takingOrders && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl bg-warning px-5 py-4 text-warning-foreground">
+          <p className="flex-1 font-bold">
+            {outlet.pauseOrders
+              ? "New orders are paused."
+              : isOpenNow(outlet)
+                ? "This den is closed to customers."
+                : "This den is closed (after hours). Open it to take orders."}
+          </p>
+          <Button
+            size="lg"
+            onClick={async () => {
+              try {
+                await updateOutlet(outlet.id, {
+                  isOpen: true,
+                  forceOpen: true,
+                  pauseOrders: false,
+                });
+                toast.success(`${outlet.short} is open — customers can order`);
+              } catch (err) {
+                toast.error((err as Error).message);
+              }
+            }}
+          >
+            Open outlet now
+          </Button>
+        </div>
+      )}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <h1 className="text-3xl font-bold">Live orders</h1>
         <SyncBadge tick={`${orders.map((o) => o.id + o.status).join("|")}`} />
         <span className="rounded-full bg-primary px-3 py-1 text-sm font-bold text-primary-foreground">
           {newCount} new
         </span>
+        <span className="rounded-full bg-muted px-3 py-1 text-sm font-bold">
+          {cooks} on the floor
+        </span>
+        <span className="rounded-full bg-muted px-3 py-1 text-sm font-bold">
+          {orders.length} in queue · {perOrder} min each
+        </span>
+        <div className="flex flex-wrap gap-1">
+          {[5, 10, 15, 20, 30].map((m) => (
+            <Button
+              key={m}
+              size="sm"
+              variant={perOrder === m ? "default" : "outline"}
+              onClick={async () => {
+                if (!outlet) return;
+                try {
+                  await updateOutlet(outlet.id, { waitMinutes: m });
+                  toast(`Each order is ${m} min`);
+                } catch (err) {
+                  toast.error((err as Error).message);
+                }
+              }}
+            >
+              {m}m
+            </Button>
+          ))}
+        </div>
         <div className="ml-auto flex gap-2">
           <Button
             variant="outline"
@@ -105,55 +156,51 @@ function Board() {
           >
             {sound ? <Bell /> : <BellOff />} Sound {sound ? "on" : "off"}
           </Button>
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={async () => {
-              const o = await simulateOrder(outletId);
-              toast(`Simulated order #${o.number}`);
-            }}
-          >
-            <Plus /> Simulate new order
-          </Button>
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {COLS.map((c) => {
-          const list = orders
-            .filter((o) => o.status === c.status)
-            .sort((a, b) => a.createdAt - b.createdAt);
-          return (
-            <section key={c.status} className="rounded-3xl bg-muted/50 p-3" aria-label={c.title}>
-              <h2 className="flex items-center justify-between px-2 pb-3 text-xl font-bold">
-                {c.title}
-                <span className="rounded-full bg-card px-2.5 text-base">{list.length}</span>
-              </h2>
-              <div className="space-y-3">
-                <AnimatePresence initial={false}>
-                  {list.map((o) => (
-                    <OrderCard key={o.id} o={o} now={now} />
-                  ))}
-                </AnimatePresence>
-                {list.length === 0 && (
-                  <p className="rounded-2xl border-2 border-dashed p-6 text-center text-sm text-muted-foreground">
-                    All clear
-                  </p>
-                )}
-              </div>
-            </section>
-          );
-        })}
+      {orders.length > 0 && (
+        <p className="mb-3 overflow-x-auto text-sm font-semibold text-muted-foreground">
+          Queue · oldest first: {orders.map((o) => `#${o.number}`).join(" → ")}
+        </p>
+      )}
+      <div className="space-y-3">
+        <AnimatePresence initial={false}>
+          {orders.map((o, i) => (
+            <OrderCard
+              key={o.id}
+              o={o}
+              now={now}
+              place={i + 1}
+              slot={perOrder}
+              readyIn={waitForOrder(db.orders, outletId, o.id, perOrder)}
+            />
+          ))}
+        </AnimatePresence>
+        {orders.length === 0 && (
+          <p className="rounded-3xl border-2 border-dashed p-10 text-center text-muted-foreground">
+            All clear — next ticket waits {perOrder} min
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-function OrderCard({ o, now }: { o: Order; now: number }) {
+function OrderCard({
+  o,
+  now,
+  place,
+  slot,
+  readyIn,
+}: {
+  o: Order;
+  now: number;
+  place: number;
+  slot: number;
+  readyIn: number;
+}) {
   const [rejecting, setRejecting] = useState(false);
   const mins = Math.floor((now - o.createdAt) / 6e4);
-  const left = Math.round((o.promisedAt - now) / 6e4);
-  const late = left < 0;
-  const tight = left >= 0 && left <= 5;
   const act = async (s: OrderStatus, r?: string) => {
     try {
       await setOrderStatus(o.id, s, r);
@@ -169,18 +216,24 @@ function OrderCard({ o, now }: { o: Order; now: number }) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       className={cn(
-        "rounded-2xl border-2 bg-card p-4 shadow-warm",
+        "flex flex-col gap-3 rounded-2xl border-2 bg-card p-4 shadow-warm sm:flex-row",
         o.status === "Placed"
           ? "border-primary animate-[pulse_2s_ease-in-out_3]"
           : "border-transparent",
-        late && "border-primary",
       )}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-cocoa text-cream">
+        <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Queue</span>
+        <span className="font-display text-2xl leading-none">{place}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-display text-3xl">#{o.number}</p>
           <p className="text-sm text-muted-foreground">
-            {o.customerName} · {mins}m ago
+            {o.status === "Ready"
+              ? `Ready for pickup · ${o.customerName} · ${mins}m ago`
+              : `Ready in ${readyIn} min (${slot} min × queue) · ${o.customerName} · ${mins}m ago`}
           </p>
         </div>
         <div className="text-right">
@@ -194,23 +247,30 @@ function OrderCard({ o, now }: { o: Order; now: number }) {
           >
             {o.payment === "online" ? "PAID ONLINE" : "PAY AT COUNTER"}
           </span>
-          <p
-            className={cn(
-              "mt-1 text-sm font-bold",
-              late ? "text-primary" : tight ? "text-warning" : "text-muted-foreground",
-            )}
-          >
-            {late ? `${-left}m LATE` : `${left}m left`}
-          </p>
+          <p className="mt-1 text-sm font-bold text-muted-foreground">{o.status}</p>
         </div>
       </div>
       <ul className="mt-3 space-y-1.5 border-t pt-3">
         {o.lines.map((l) => (
-          <li key={l.key} className="text-base">
+          <li key={l.lineId || l.key} className="text-base">
             <span className="flex items-center gap-2 font-semibold">
               <VegDot veg={l.veg} />
-              {l.qty}× {l.name}
-              {l.size ? ` (${l.size})` : ""}
+              <span className="flex-1">
+                {l.qty}× {l.name}
+                {l.size ? ` (${l.size})` : ""}
+              </span>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase",
+                  l.lineStatus === "ready"
+                    ? "bg-success text-success-foreground"
+                    : l.lineStatus === "collected"
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-warning/80 text-warning-foreground",
+                )}
+              >
+                {l.lineStatus}
+              </span>
             </span>
             {l.toppings.length > 0 && (
               <span className="ml-6 block text-sm text-muted-foreground">
@@ -218,6 +278,16 @@ function OrderCard({ o, now }: { o: Order; now: number }) {
               </span>
             )}
             {l.note && <span className="ml-6 block text-sm text-warning">“{l.note}”</span>}
+            {l.lineStatus !== "collected" && l.lineStatus !== "ready" && o.status !== "Placed" && (
+              <Button
+                size="sm"
+                variant="secondary"
+                className="mt-1 ml-6"
+                onClick={() => setLineReady(o.id, l.lineId)}
+              >
+                Mark ready
+              </Button>
+            )}
           </li>
         ))}
       </ul>
@@ -264,6 +334,7 @@ function OrderCard({ o, now }: { o: Order; now: number }) {
             Handed over
           </Button>
         )}
+      </div>
       </div>
     </motion.article>
   );

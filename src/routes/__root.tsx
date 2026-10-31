@@ -19,7 +19,7 @@ function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-primary">404</h1>
+        <h1 className="text-5xl font-bold text-primary sm:text-7xl">404</h1>
         <h2 className="mt-4 text-xl font-semibold text-foreground">This slice went missing</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           The page you're looking for doesn't exist or has been moved.
@@ -79,17 +79,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1, viewport-fit=cover",
+      },
       { name: "theme-color", content: "#AF2225" },
       { title: "Grizzly Pizzeria" },
       {
         name: "description",
-        content: "Order big slices from Grizzly Pizzeria for pickup in Madhapur, Hyderabad.",
+        content:
+          "100% vegetarian pizzeria in Madhapur, Hyderabad. Hand-stretched pizza for pickup — no meat, no egg.",
       },
       { property: "og:title", content: "Grizzly Pizzeria" },
       {
         property: "og:description",
-        content: "Hand-stretched pizza for pickup from two Madhapur outlets.",
+        content: "A 100% vegetarian kitchen. Hand-stretched pizza for pickup from two Madhapur dens.",
       },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "/og-image.png" },
@@ -104,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Fredoka:wght@500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap",
       },
     ],
   }),
@@ -139,9 +143,8 @@ if (typeof window !== "undefined" && !loaderStarted) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  // Data lives in browser storage (demo layer), so the app renders after hydration
-  // behind the branded loading screen. The timer is module-scoped and is never
-  // cleared, so a strict-mode remount cannot cancel the only way to dismiss it.
+  // Brief branded loader so the first paint isn't an empty shell. The timer is
+  // module-scoped so a strict-mode remount cannot cancel the only dismiss path.
   const [ready, setReady] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
   useEffect(() => {

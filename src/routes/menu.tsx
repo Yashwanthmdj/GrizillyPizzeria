@@ -4,7 +4,6 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ShopLayout, seo } from "@/components/shop/ShopLayout";
 import { MenuCard } from "@/components/shop/MenuCard";
-import { VegDot } from "@/components/brand";
 import { useDB, useSession } from "@/services/store";
 import { itemPrice } from "@/services/pricing";
 import { CATEGORIES, type Category } from "@/services/types";
@@ -14,19 +13,17 @@ export const Route = createFileRoute("/menu")({
   head: () =>
     seo(
       "Menu · Grizzly Pizzeria",
-      "Pizzas, sides, drinks, desserts and combos. Veg and non-veg, made fresh at Grizzly Pizzeria.",
+      "100% vegetarian pizzas, sandwiches, garlic bread, fries and dips from the Grizzly Pizzeria board.",
     ),
   component: MenuPage,
 });
 
-type Diet = "all" | "veg" | "nonveg";
 type Sort = "popular" | "low" | "high";
 
 function MenuPage() {
   const db = useDB();
   const s = useSession();
   const [cat, setCat] = useState<Category | "All">("All");
-  const [diet, setDiet] = useState<Diet>("all");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("popular");
   const outlet = db.outlets.find((o) => o.id === s.outletId);
@@ -34,8 +31,8 @@ function MenuPage() {
   const items = useMemo(() => {
     let list = db.menu.filter(
       (m) =>
+        m.veg &&
         (cat === "All" || m.category === cat) &&
-        (diet === "all" || (diet === "veg" ? m.veg : !m.veg)) &&
         m.name.toLowerCase().includes(q.toLowerCase().trim()),
     );
     if (sort === "low")
@@ -47,14 +44,15 @@ function MenuPage() {
         (a, b) => Number(b.badge === "Bestseller") - Number(a.badge === "Bestseller"),
       );
     return list;
-  }, [db.menu, cat, diet, q, sort, s.outletId]);
+  }, [db.menu, cat, q, sort, s.outletId]);
 
   return (
     <ShopLayout>
       <div className="bg-hero grain text-primary-foreground">
         <div className="mx-auto max-w-7xl px-4 pb-8 pt-10 sm:px-6">
-          <h1 className="text-5xl font-bold sm:text-6xl">The menu</h1>
-          <p className="mt-2 text-primary-foreground/80">
+          <h1 className="text-[clamp(2.25rem,8vw,3.75rem)] font-bold">The menu</h1>
+          <p className="mt-2 max-w-xl text-sm text-primary-foreground/80 sm:text-base">
+            100% vegetarian kitchen.{" "}
             {outlet ? (
               <>
                 Ordering from <b className="text-secondary">{outlet.short}</b> · ~
@@ -71,7 +69,7 @@ function MenuPage() {
           </p>
         </div>
       </div>
-      <div className="sticky top-16 z-30 border-b bg-background/95 backdrop-blur">
+      <div className="sticky top-14 z-30 border-b bg-background/95 backdrop-blur sm:top-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <LayoutGroup>
             <div
@@ -103,7 +101,7 @@ function MenuPage() {
             </div>
           </LayoutGroup>
           <div className="flex flex-wrap items-center gap-2 pb-3">
-            <label className="relative min-w-48 flex-1">
+            <label className="relative min-w-0 flex-1 basis-full sm:basis-auto">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <span className="sr-only">Search menu</span>
               <input
@@ -113,27 +111,11 @@ function MenuPage() {
                 className="h-10 w-full rounded-full border-2 border-input bg-card pl-9 pr-3 text-sm outline-none focus:border-primary"
               />
             </label>
-            <div className="flex rounded-full bg-muted p-1" role="group" aria-label="Diet filter">
-              {(["all", "veg", "nonveg"] as Diet[]).map((d) => (
-                <button
-                  key={d}
-                  aria-pressed={diet === d}
-                  onClick={() => setDiet(d)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold",
-                    diet === d && "bg-card shadow-warm",
-                  )}
-                >
-                  {d !== "all" && <VegDot veg={d === "veg"} />}
-                  {d === "all" ? "All" : d === "veg" ? "Veg" : "Non-veg"}
-                </button>
-              ))}
-            </div>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
               aria-label="Sort"
-              className="h-10 rounded-full border-2 border-input bg-card px-3 text-sm font-semibold"
+              className="h-10 min-w-0 flex-1 rounded-full border-2 border-input bg-card px-3 text-sm font-semibold sm:flex-none"
             >
               <option value="popular">Popular</option>
               <option value="low">Price: low to high</option>
@@ -151,7 +133,6 @@ function MenuPage() {
               className="mt-4 font-semibold text-primary underline"
               onClick={() => {
                 setQ("");
-                setDiet("all");
                 setCat("All");
               }}
             >
@@ -159,7 +140,7 @@ function MenuPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((m, i) => (
               <MenuCard key={m.id} item={m} outletId={s.outletId} index={i} />
             ))}

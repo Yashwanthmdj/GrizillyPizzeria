@@ -12,15 +12,15 @@ import { CATEGORIES, type Category, type MenuItem } from "@/services/types";
 const schema = z.object({
   name: z.string().min(2),
   description: z.string().min(4),
-  category: z.enum(["Pizzas", "Sides", "Drinks", "Desserts", "Combos"]),
+  category: z.enum(["Pizzas", "Sandwiches", "Garlic Bread", "Fries", "Dips"]),
   price: z.number().positive(),
   badge: z.string().optional(),
 });
 
-const SIZES = [
-  { key: "Regular" as const, extra: 0 },
-  { key: "Medium" as const, extra: 120 },
-  { key: "Large" as const, extra: 240 },
+const FRY_SIZES = [
+  { key: "Small" as const, extra: 0 },
+  { key: "Medium" as const, extra: 80 },
+  { key: "Large" as const, extra: 170 },
 ];
 
 export const Route = createFileRoute("/admin/menu")({
@@ -42,7 +42,8 @@ function blank(outlets: string[]): MenuItem {
     image: "/brand/bear.png",
     availability: Object.fromEntries(outlets.map((id) => [id, true])),
     priceOverride: {},
-    sizes: SIZES,
+    sizes: undefined,
+    prepMinutes: 16,
   };
 }
 
@@ -61,8 +62,8 @@ function MenuAdmin() {
     setError("");
     const item: MenuItem = {
       ...draft,
-      sizes: draft.category === "Pizzas" ? (draft.sizes ?? SIZES) : undefined,
-      toppings: draft.category === "Pizzas" ? draft.toppings : undefined,
+      sizes: draft.category === "Fries" ? (draft.sizes ?? FRY_SIZES) : undefined,
+      toppings: draft.category === "Fries" ? draft.toppings : undefined,
     };
     await upsertMenuItem(item);
     toast.success(`${item.name} saved`);
@@ -93,7 +94,7 @@ function MenuAdmin() {
             <div className="min-w-0 flex-1">
               <p className="font-semibold">{item.name}</p>
               <p className="text-xs text-muted-foreground">
-                {item.category} · {inr(item.price)} · {item.veg ? "Veg" : "Non-veg"}
+                {item.category} · {inr(item.price)} · Veg
               </p>
             </div>
             <Button variant="outline" onClick={() => setDraft(structuredClone(item))}>
@@ -168,14 +169,7 @@ function MenuAdmin() {
               <option>New</option>
             </select>
           </div>
-          <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
-            <input
-              type="checkbox"
-              checked={draft.veg}
-              onChange={(e) => setDraft({ ...draft, veg: e.target.checked })}
-            />{" "}
-            Vegetarian
-          </label>
+          <p className="text-sm font-semibold text-muted-foreground">100% vegetarian kitchen — every item is veg.</p>
           <label className="text-sm font-semibold">
             Photo
             <input

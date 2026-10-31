@@ -51,7 +51,7 @@ function SettingsAdmin() {
     >
       <h1 className="text-4xl">Settings</h1>
       <p className="text-sm text-muted-foreground">
-        Cart, checkout and the contact page read these values. Payments stay demo.
+        Cart, checkout and the contact page read these values.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Num label="GST %" value={form.taxPercent} onChange={(taxPercent) => set({ taxPercent })} />
@@ -66,7 +66,7 @@ function SettingsAdmin() {
           onChange={(minimumOrder) => set({ minimumOrder })}
         />
         <Num
-          label="Default prep time (min)"
+          label="Default minutes per order"
           value={form.defaultPrepMinutes}
           onChange={(defaultPrepMinutes) => set({ defaultPrepMinutes })}
         />
@@ -80,7 +80,7 @@ function SettingsAdmin() {
         />
       </label>
       <label className="block text-sm font-semibold">
-        WhatsApp number (demo link)
+        WhatsApp number
         <input
           value={form.whatsapp}
           onChange={(e) => set({ whatsapp: e.target.value.replace(/\D/g, "") })}

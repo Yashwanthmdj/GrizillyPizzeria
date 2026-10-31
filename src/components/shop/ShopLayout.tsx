@@ -10,7 +10,7 @@ import { ShopUIProvider } from "./ui-context";
 export function ShopLayout({ children }: { children: ReactNode }) {
   return (
     <ShopUIProvider>
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-dvh w-full min-w-0 flex-col overflow-x-clip">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-full focus:bg-card focus:px-4 focus:py-2"
@@ -20,7 +20,7 @@ export function ShopLayout({ children }: { children: ReactNode }) {
         <Header />
         <motion.main
           id="main"
-          className="flex-1"
+          className="min-w-0 flex-1"
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: EASE }}
@@ -46,11 +46,11 @@ export function PageHead({
 }) {
   return (
     <div className="bg-hero grain text-primary-foreground">
-      <div className="mx-auto max-w-7xl px-4 pb-10 pt-10 sm:px-6 sm:pb-14 sm:pt-14">
+      <div className="mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 sm:pb-14 sm:pt-14">
         {eyebrow && (
           <p className="text-sm font-bold uppercase tracking-widest text-secondary">{eyebrow}</p>
         )}
-        <h1 className="mt-1 text-4xl font-bold sm:text-6xl">{title}</h1>
+        <h1 className="mt-1 text-3xl font-bold sm:text-5xl md:text-6xl">{title}</h1>
         {sub && <p className="mt-2 max-w-xl text-primary-foreground/80">{sub}</p>}
       </div>
     </div>

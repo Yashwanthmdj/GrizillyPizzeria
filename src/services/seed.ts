@@ -1,25 +1,19 @@
 import margherita from "@/assets/menu-margherita.jpg";
-import pepperoni from "@/assets/menu-pepperoni.jpg";
 import veggie from "@/assets/menu-veggie.jpg";
 import sides from "@/assets/menu-sides.jpg";
 import drinks from "@/assets/menu-drinks.jpg";
-import dessert from "@/assets/menu-dessert.jpg";
 import combo from "@/assets/menu-combo.jpg";
-import { rng } from "./rng";
 import type {
-  CartLine,
   Coupon,
-  Customer,
   DB,
+  KitchenWorker,
+  LoyaltyRule,
   MenuItem,
-  Order,
-  OrderStatus,
   Outlet,
   ShopSettings,
+  Staff,
   Topping,
 } from "./types";
-
-export { rng };
 
 export const OUTLETS: Outlet[] = [
   {
@@ -32,7 +26,9 @@ export const OUTLETS: Outlet[] = [
     closeHour: 23,
     mapUrl: "https://maps.google.com/?q=Kavuri+Hills+Madhapur+Hyderabad",
     phone: "9000000001",
-    waitMinutes: 20,
+    waitMinutes: 10,
+    minutesPerOrder: 10,
+    fallbackWaitMinutes: 10,
     isOpen: true,
     pauseOrders: false,
   },
@@ -46,269 +42,266 @@ export const OUTLETS: Outlet[] = [
     closeHour: 24,
     mapUrl: "https://maps.google.com/?q=Ayyappa+Society+Madhapur+Hyderabad",
     phone: "9000000002",
-    waitMinutes: 15,
+    waitMinutes: 10,
+    minutesPerOrder: 10,
+    fallbackWaitMinutes: 10,
     isOpen: true,
     pauseOrders: false,
   },
 ];
 
-const SIZES = [
-  { key: "Regular" as const, extra: 0 },
-  { key: "Medium" as const, extra: 120 },
-  { key: "Large" as const, extra: 240 },
+const FRY_SIZES = [
+  { key: "Small" as const, extra: 0 },
+  { key: "Medium" as const, extra: 80 },
+  { key: "Large" as const, extra: 170 },
 ];
-const VEG_TOPS: Topping[] = [
-  { name: "Extra cheese", price: 60, veg: true },
-  { name: "Jalapeños", price: 40, veg: true },
-  { name: "Mushrooms", price: 40, veg: true },
-  { name: "Paneer", price: 60, veg: true },
-  { name: "Olives", price: 40, veg: true },
-];
-const NV_TOPS: Topping[] = [
-  ...VEG_TOPS,
-  { name: "Pepperoni", price: 80, veg: false },
-  { name: "Chicken tikka", price: 80, veg: false },
+const FRY_TOPS: Topping[] = [
+  { name: "Nachos", price: 60, veg: true },
+  { name: "Extra Cheese", price: 30, veg: true },
+  { name: "Kurkure", price: 40, veg: true },
 ];
 
 const both = { o1: true, o2: true };
+
+function defaultPrep(category: MenuItem["category"]) {
+  if (category === "Fries") return 6;
+  if (category === "Pizzas") return 16;
+  if (category === "Sandwiches") return 8;
+  if (category === "Garlic Bread") return 8;
+  if (category === "Dips") return 1;
+  return 8;
+}
+
 function item(
   p: Partial<MenuItem> &
     Pick<MenuItem, "id" | "name" | "category" | "price" | "image" | "veg" | "description">,
 ): MenuItem {
-  const pizza = p.category === "Pizzas";
+  const fries = p.category === "Fries";
   return {
     availability: { ...both },
     priceOverride: {},
-    sizes: pizza ? SIZES : undefined,
-    toppings: pizza ? (p.veg ? VEG_TOPS : NV_TOPS) : undefined,
+    sizes: fries ? FRY_SIZES : undefined,
+    toppings: fries ? FRY_TOPS : undefined,
+    prepMinutes: defaultPrep(p.category),
     ...p,
+    veg: true,
   };
 }
 
+/** Printed Grizzly board only. Garlic bread had no prices on the card. */
 export const MENU: MenuItem[] = [
   item({
-    id: "m1",
-    name: "Classic Margherita",
+    id: "p1",
+    name: "Margherita",
     category: "Pizzas",
     veg: true,
-    price: 249,
+    price: 259,
     image: margherita,
     badge: "Bestseller",
-    description: "San Marzano tomato, fior di latte, fresh basil. Simple. Perfect.",
+    description: "Tomato sauce, mozzarella, basil and olive oil.",
   }),
   item({
-    id: "m2",
-    name: "Grizzly Pepperoni",
-    category: "Pizzas",
-    veg: false,
-    price: 379,
-    image: pepperoni,
-    badge: "Bestseller",
-    description: "Double pepperoni, mozzarella, hot honey drizzle.",
-  }),
-  item({
-    id: "m3",
-    name: "Forest Veggie",
+    id: "p2",
+    name: "Angry Mushroom",
     category: "Pizzas",
     veg: true,
-    price: 329,
+    price: 289,
     image: veggie,
-    description: "Peppers, mushrooms, olives, onion and paneer cubes.",
-  }),
-  item({
-    id: "m4",
-    name: "Fire Bear",
-    category: "Pizzas",
-    veg: false,
-    price: 399,
-    image: pepperoni,
     badge: "Spicy",
-    description: "Pepperoni, jalapeños, chilli flakes. Bring tissues.",
+    description: "Tomato sauce, garlic-marinated mushroom and jalapeno.",
   }),
   item({
-    id: "m5",
-    name: "Paneer Tikka Roar",
+    id: "p3",
+    name: "Pesto Olive",
+    category: "Pizzas",
+    veg: true,
+    price: 299,
+    image: veggie,
+    description: "Pesto sauce, olives, peppers and sun-dried tomato.",
+  }),
+  item({
+    id: "p4",
+    name: "Devil",
+    category: "Pizzas",
+    veg: true,
+    price: 299,
+    image: veggie,
+    badge: "Spicy",
+    description: "Paneer, pickled onion, paprika and jalapeno.",
+  }),
+  item({
+    id: "p5",
+    name: "Bianca Al Truffle",
     category: "Pizzas",
     veg: true,
     price: 349,
-    image: veggie,
-    badge: "Spicy",
-    description: "Tandoori paneer, onion, capsicum, mint mayo swirl.",
-  }),
-  item({
-    id: "m6",
-    name: "Chicken Tikka Supreme",
-    category: "Pizzas",
-    veg: false,
-    price: 419,
-    image: pepperoni,
-    description: "Smoky tikka chicken, onions, coriander, makhani base.",
-  }),
-  item({
-    id: "m7",
-    name: "Four Cheese Hibernation",
-    category: "Pizzas",
-    veg: true,
-    price: 389,
     image: margherita,
-    badge: "New",
-    description: "Mozzarella, cheddar, parmesan, gouda. Nap afterwards.",
+    description: "White sauce, caramelized onion and mushroom.",
   }),
   item({
-    id: "m8",
-    name: "Honey Bear BBQ",
+    id: "p6",
+    name: "Farmhouse",
     category: "Pizzas",
-    veg: false,
-    price: 409,
-    image: pepperoni,
-    badge: "New",
-    description: "BBQ chicken, red onion, honey glaze, smoked cheese.",
-  }),
-  item({
-    id: "s1",
-    name: "Cheesy Garlic Bread",
-    category: "Sides",
     veg: true,
-    price: 149,
-    image: sides,
-    badge: "Bestseller",
-    description: "Buttery, garlicky, stretchy. With marinara dip.",
+    price: 299,
+    image: veggie,
+    description: "Pepper, pickled onion, corn, jalapeno, olives and mushroom.",
   }),
   item({
-    id: "s2",
-    name: "Stuffed Garlic Sticks",
-    category: "Sides",
+    id: "sw1",
+    name: "Classic Caprese Sandwich",
+    category: "Sandwiches",
+    veg: true,
+    price: 259,
+    image: sides,
+    description: "Fresh mozzarella cheese, lettuce, tomato and pesto sauce.",
+  }),
+  item({
+    id: "sw2",
+    name: "Funghi Krmusi Sandwich",
+    category: "Sandwiches",
+    veg: true,
+    price: 199,
+    image: sides,
+    description: "Marinated mushroom, jalapeno, lettuce and garlic mayo.",
+  }),
+  item({
+    id: "sw3",
+    name: "Paneer Tikka Sandwich",
+    category: "Sandwiches",
+    veg: true,
+    price: 249,
+    image: sides,
+    description: "Pickled onion, green chutney, paneer, tomato and lettuce.",
+  }),
+  item({
+    id: "g1",
+    name: "Classic Garlic Bread",
+    category: "Garlic Bread",
+    veg: true,
+    price: 129,
+    image: sides,
+    description: "Garlic butter.",
+  }),
+  item({
+    id: "g2",
+    name: "Grizzly Chef Special",
+    category: "Garlic Bread",
     veg: true,
     price: 179,
     image: sides,
-    description: "Jalapeño and corn stuffed sticks.",
-  }),
-  item({
-    id: "s3",
-    name: "Peri Peri Fries",
-    category: "Sides",
-    veg: true,
-    price: 129,
-    image: combo,
-    badge: "Spicy",
-    description: "Crispy fries, peri peri dust.",
-  }),
-  item({
-    id: "s4",
-    name: "Chicken Wings (6)",
-    category: "Sides",
-    veg: false,
-    price: 249,
-    image: combo,
-    description: "Smoky BBQ glazed wings.",
-  }),
-  item({
-    id: "d1",
-    name: "Classic Cola",
-    category: "Drinks",
-    veg: true,
-    price: 69,
-    image: drinks,
-    description: "Ice cold. 330ml.",
-  }),
-  item({
-    id: "d2",
-    name: "Fresh Lime Soda",
-    category: "Drinks",
-    veg: true,
-    price: 89,
-    image: drinks,
-    description: "Sweet, salted or both.",
-  }),
-  item({
-    id: "d3",
-    name: "Iced Peach Tea",
-    category: "Drinks",
-    veg: true,
-    price: 99,
-    image: drinks,
-    badge: "New",
-    description: "House brewed, lightly sweet.",
-  }),
-  item({
-    id: "x1",
-    name: "Choco Lava Cave",
-    category: "Desserts",
-    veg: true,
-    price: 129,
-    image: dessert,
     badge: "Bestseller",
-    description: "Molten centre, vanilla scoop.",
+    description: "Garlic butter, cheese and garlic mayo.",
   }),
   item({
-    id: "x2",
-    name: "Nutella Pizza Slice",
-    category: "Desserts",
+    id: "g3",
+    name: "Jalapeno & Tomato",
+    category: "Garlic Bread",
     veg: true,
     price: 159,
-    image: dessert,
-    description: "Sweet crust, Nutella, hazelnut crumble.",
+    image: sides,
+    badge: "Spicy",
+    description: "Jalapeno, garlic butter and cheese.",
   }),
   item({
-    id: "c1",
-    name: "Solo Bear Combo",
-    category: "Combos",
+    id: "g4",
+    name: "Angry Mushroom Bread",
+    category: "Garlic Bread",
     veg: true,
-    price: 399,
-    image: combo,
-    description: "Regular Margherita + garlic bread + cola.",
+    price: 169,
+    image: sides,
+    description: "Marinated mushroom and cheese.",
   }),
   item({
-    id: "c2",
-    name: "Den Party Combo",
-    category: "Combos",
-    veg: false,
-    price: 999,
+    id: "g5",
+    name: "Pesto Garlic Bread",
+    category: "Garlic Bread",
+    veg: true,
+    price: 189,
+    image: sides,
+    description: "Pesto sauce, garlic butter, cheese and sun-dried tomato.",
+  }),
+  item({
+    id: "f1",
+    name: "Spicy Chipotle Fries",
+    category: "Fries",
+    veg: true,
+    price: 99,
     image: combo,
     badge: "Bestseller",
-    description: "2 Medium pizzas + wings + fries + 2 drinks.",
+    description: "Crispy fries, spicy chipotle dust. Small / Medium / Large.",
   }),
   item({
-    id: "c3",
-    name: "Date Night Duo",
-    category: "Combos",
+    id: "f2",
+    name: "Chilli Cheese Fries",
+    category: "Fries",
     veg: true,
-    price: 649,
+    price: 99,
     image: combo,
-    description: "Medium pizza + garlic bread + 2 lava cakes.",
+    badge: "Bestseller",
+    description: "Crispy fries, chilli cheese. Small / Medium / Large.",
   }),
-];
-// A couple of sold-out examples
-MENU[5]!.availability = { o1: true, o2: false };
-MENU[10]!.availability = { o1: false, o2: true };
-
-const NAMES = [
-  "Aarav",
-  "Diya",
-  "Kabir",
-  "Meera",
-  "Rohan",
-  "Ishita",
-  "Arjun",
-  "Sana",
-  "Vihaan",
-  "Anaya",
-  "Zoya",
-  "Dev",
+  item({
+    id: "f3",
+    name: "Cheese Peri Peri Fries",
+    category: "Fries",
+    veg: true,
+    price: 99,
+    image: combo,
+    badge: "Bestseller",
+    description: "Crispy fries, cheese peri peri. Small / Medium / Large.",
+  }),
+  item({
+    id: "f4",
+    name: "Korean BBQ Fries",
+    category: "Fries",
+    veg: true,
+    price: 99,
+    image: combo,
+    badge: "Bestseller",
+    description: "Crispy fries, Korean BBQ. Small / Medium / Large.",
+  }),
+  item({
+    id: "dip1",
+    name: "Pesto Dip",
+    category: "Dips",
+    veg: true,
+    price: 40,
+    image: drinks,
+    description: "House pesto.",
+  }),
+  item({
+    id: "dip2",
+    name: "Honey Chilli Dip",
+    category: "Dips",
+    veg: true,
+    price: 39,
+    image: drinks,
+    description: "Sweet heat.",
+  }),
+  item({
+    id: "dip3",
+    name: "Marinara Dip",
+    category: "Dips",
+    veg: true,
+    price: 35,
+    image: drinks,
+    description: "Classic tomato.",
+  }),
 ];
 
 export const DEFAULT_SETTINGS: ShopSettings = {
   taxPercent: 5,
   packagingFee: 20,
-  minimumOrder: 149,
-  defaultPrepMinutes: 20,
+  minimumOrder: 99,
+  defaultPrepMinutes: 10,
   phone: "9000000001",
   whatsapp: "9000000001",
-  email: "hello@grizzlypizzeria.demo",
+  email: "hello@grizzlypizzeria.com",
   refundText:
-    "Placeholder text, to be replaced by the approved policy. Demo refunds are not processed.",
+    "If the kitchen cannot fulfil an accepted order, we refund online payments to the original method within 3–5 working days. Counter payments are not charged until pickup.",
   cancellationText:
-    "Placeholder text, to be replaced by the approved policy. Cancel before the kitchen accepts the order.",
+    "Cancel from My orders before the kitchen accepts. After accept, call the outlet — food already in the oven cannot be cancelled.",
 };
 
 export function defaultCoupons(now = Date.now()): Coupon[] {
@@ -322,7 +315,7 @@ export function defaultCoupons(now = Date.now()): Coupon[] {
       validFrom: now - 864e5,
       validUntil: now + 90 * 864e5,
       usageLimit: 100,
-      used: 3,
+      used: 0,
       active: true,
     },
     {
@@ -334,131 +327,64 @@ export function defaultCoupons(now = Date.now()): Coupon[] {
       validFrom: now - 864e5,
       validUntil: now + 30 * 864e5,
       usageLimit: 50,
-      used: 1,
+      used: 0,
       active: true,
     },
   ];
 }
 
-export function buildSeed(now = Date.now()): DB {
-  const r = rng(42);
-  const customers: Customer[] = NAMES.map((n, i) => ({
-    phone: `98765${String(43210 + i).padStart(5, "0")}`,
-    name: n,
-    points: Math.floor(r() * 600),
-    lifetimePoints: 600 + Math.floor(r() * 900),
-    visits: 2 + Math.floor(r() * 14),
-    streak: 1 + Math.floor(r() * 5),
-    lastVisit: now - Math.floor(r() * 7) * 864e5,
-    history: [
-      { at: now - 6 * 864e5, delta: 45, label: "Order earned" },
-      { at: now - 3 * 864e5, delta: -100, label: "Redeemed Rs 50 off" },
-      { at: now - 864e5, delta: 60, label: "Order earned" },
-    ],
-  }));
-  const orders: Order[] = [];
-  let number = 101;
-  for (let i = 0; i < 40; i++) {
-    const outletId = r() > 0.5 ? "o1" : "o2";
-    const c = customers[Math.floor(r() * customers.length)]!;
-    const n = 1 + Math.floor(r() * 3);
-    const lines: CartLine[] = [];
-    for (let j = 0; j < n; j++) {
-      const m = MENU[Math.floor(r() * MENU.length)]!;
-      const qty = 1 + Math.floor(r() * 2);
-      lines.push({
-        key: `${m.id}-${j}`,
-        itemId: m.id,
-        name: m.name,
-        image: m.image,
-        veg: m.veg,
-        size: m.sizes ? "Regular" : undefined,
-        toppings: [],
-        unitPrice: m.price,
-        qty,
-      });
-    }
-    const subtotal = lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
-    const tax = Math.round(subtotal * 0.05);
-    const total = subtotal + tax;
-    // most recent 8 are live
-    const ageMin = i < 8 ? 2 + i * 4 : 60 + i * 90;
-    const createdAt = now - ageMin * 6e4;
-    const liveStatus: OrderStatus[] = [
-      "Placed",
-      "Placed",
-      "Accepted",
-      "Preparing",
-      "Preparing",
-      "Ready",
-      "Accepted",
-      "Placed",
-    ];
-    const status: OrderStatus = i < 8 ? liveStatus[i]! : r() > 0.06 ? "Collected" : "Rejected";
-    const online = r() > 0.4;
-    const flowIdx = ["Placed", "Accepted", "Preparing", "Ready", "Collected"].indexOf(status);
-    const history =
-      status === "Rejected"
-        ? [
-            { status: "Placed" as const, at: createdAt },
-            { status: "Rejected" as const, at: createdAt + 3e5 },
-          ]
-        : (["Placed", "Accepted", "Preparing", "Ready", "Collected"] as OrderStatus[])
-            .slice(0, flowIdx + 1)
-            .map((s, k) => ({ status: s, at: createdAt + k * 4e5 }));
-    orders.push({
-      id: `ord_${number}`,
-      number: number++,
-      outletId,
-      customerName: c.name,
-      phone: c.phone,
-      lines,
-      subtotal,
-      tax,
-      discount: 0,
-      total,
-      pointsUsed: 0,
-      pointsEarned: Math.floor(total / 100) * 10,
-      payment: online ? "online" : "counter",
-      paid: online || status === "Collected",
-      qrToken: online ? `tok${number}x${Math.floor(r() * 1e6)}` : undefined,
-      qrUsed: status === "Collected",
-      status,
-      rejectReason: status === "Rejected" ? "Out of ingredients" : undefined,
-      history,
-      createdAt,
-      promisedAt: createdAt + 20 * 6e4,
-    });
-  }
+export const DEFAULT_LOYALTY: LoyaltyRule = {
+  pointsPerHundred: 10,
+  steps: [
+    { id: "r1", points: 100, label: "Rs 50 off", type: "discount", value: 50 },
+    { id: "r2", points: 250, label: "Rs 150 off", type: "discount", value: 150 },
+    { id: "r3", points: 500, label: "Free Margherita", type: "free-pizza", value: 259 },
+  ],
+  tiers: [
+    { name: "Cub", min: 0 },
+    { name: "Brown Bear", min: 500 },
+    { name: "Grizzly", min: 1500 },
+    { name: "Kodiak", min: 3000 },
+  ],
+};
+
+export const DEFAULT_STAFF: Staff[] = [
+  { username: "kitchen.outlet1", name: "Outlet 1 Kitchen", role: "kitchen", outletId: "o1" },
+  { username: "kitchen.outlet2", name: "Outlet 2 Kitchen", role: "kitchen", outletId: "o2" },
+  { username: "owner", name: "Owner", role: "owner" },
+];
+
+export function defaultWorkers(): KitchenWorker[] {
+  return [
+    { id: "w1", outletId: "o1", name: "Ravi", role: "cook", active: true },
+    { id: "w2", outletId: "o1", name: "Sneha", role: "cook", active: true },
+    { id: "w3", outletId: "o1", name: "Imran", role: "counter", active: true },
+    { id: "w4", outletId: "o2", name: "Anu", role: "cook", active: true },
+    { id: "w5", outletId: "o2", name: "Vikram", role: "cook", active: true },
+    { id: "w6", outletId: "o2", name: "Leela", role: "counter", active: true },
+  ];
+}
+
+export function emptyCatalog(now = Date.now()): DB {
   return {
-    version: 2,
+    version: 3,
     outlets: OUTLETS.map((o) => ({ ...o })),
     menu: MENU.map((m) => ({ ...m, availability: { ...m.availability }, priceOverride: {} })),
-    orders: orders.reverse(),
-    customers,
+    orders: [],
+    customers: [],
     coupons: defaultCoupons(now),
     settings: { ...DEFAULT_SETTINGS },
     audit: [],
     messages: [],
-    loyalty: {
-      pointsPerHundred: 10,
-      steps: [
-        { id: "r1", points: 100, label: "Rs 50 off", type: "discount", value: 50 },
-        { id: "r2", points: 250, label: "Rs 150 off", type: "discount", value: 150 },
-        { id: "r3", points: 500, label: "Free Medium pizza", type: "free-pizza", value: 369 },
-      ],
-      tiers: [
-        { name: "Cub", min: 0 },
-        { name: "Brown Bear", min: 500 },
-        { name: "Grizzly", min: 1500 },
-        { name: "Kodiak", min: 3000 },
-      ],
-    },
-    staff: [
-      { username: "kitchen.outlet1", name: "Outlet 1 Kitchen", role: "kitchen", outletId: "o1" },
-      { username: "kitchen.outlet2", name: "Outlet 2 Kitchen", role: "kitchen", outletId: "o2" },
-      { username: "owner", name: "The Owner", role: "owner" },
-    ],
-    nextNumber: number,
+    loyalty: { ...DEFAULT_LOYALTY, steps: DEFAULT_LOYALTY.steps.map((s) => ({ ...s })) },
+    staff: DEFAULT_STAFF.map((s) => ({ ...s })),
+    workers: defaultWorkers(),
+    attendance: [],
+    nextNumber: 101,
   };
+}
+
+/** Catalog-only seed. Live orders and customers live in SQLite. */
+export function buildSeed(now = Date.now()): DB {
+  return emptyCatalog(now);
 }

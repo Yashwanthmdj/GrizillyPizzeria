@@ -73,6 +73,7 @@ function sampleOrders(menu: MenuItem[], outlets: Outlet[], now: number): Order[]
           image: "",
           availability: {},
           priceOverride: {},
+          prepMinutes: 16,
         },
       ];
   const outletIds = outlets.length ? outlets.map((o) => o.id) : ["o1", "o2"];
@@ -106,6 +107,7 @@ function sampleOrders(menu: MenuItem[], outlets: Outlet[], now: number): Order[]
         lines: [
           {
             key: `${item.id}-${number}`,
+            lineId: `ln_${number}`,
             itemId: item.id,
             name: item.name,
             image: item.image,
@@ -113,6 +115,8 @@ function sampleOrders(menu: MenuItem[], outlets: Outlet[], now: number): Order[]
             toppings: [],
             unitPrice: unit,
             qty,
+            prepMinutes: item.prepMinutes || 16,
+            lineStatus: "collected",
           },
         ],
         subtotal,

@@ -16,7 +16,7 @@ describe("pickup QR", () => {
     expect(evaluateScan([ready], raw, "o1").ok).toBe(true);
     const used = evaluateScan([{ ...ready, qrUsed: true }], raw, "o1");
     expect(used.ok).toBe(false);
-    if (!used.ok) expect(used.reason).toMatch(/used/i);
+    if (!used.ok) expect(used.reason).toMatch(/handed over|used/i);
   });
 
   it("rejects an invalid token and the wrong outlet", () => {
@@ -34,5 +34,27 @@ describe("pickup QR", () => {
 
   it("accepts a typed order number for a ready order", () => {
     expect(evaluateScan([ready], "142", "o1").ok).toBe(true);
+  });
+
+  it("lets kitchen look up a counter order by number with no QR token", () => {
+    const counter = { ...ready, payment: "counter" as const, qrToken: undefined };
+    expect(evaluateScan([counter], "142", "o1").ok).toBe(true);
+  });
+
+  it("lets fries go out while a pizza is still cooking", () => {
+    const mixed = {
+      ...ready,
+      status: "Preparing" as const,
+      lines: [{ lineStatus: "ready" as const }, { lineStatus: "preparing" as const }],
+    };
+    expect(evaluateScan([mixed], "142", "o1").ok).toBe(true);
+    const cooking = {
+      ...ready,
+      status: "Preparing" as const,
+      lines: [{ lineStatus: "preparing" as const }, { lineStatus: "queued" as const }],
+    };
+    const blocked = evaluateScan([cooking], "142", "o1");
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.reason).toMatch(/ready/i);
   });
 });

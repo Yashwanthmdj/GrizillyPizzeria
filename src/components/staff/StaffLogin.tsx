@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BearMark, EASE, Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { PasswordField } from "@/components/ui/password-field";
 import { staffLogin } from "@/services/api";
 
 export function StaffLogin({ area }: { area: "kitchen" | "admin" }) {
@@ -12,12 +13,11 @@ export function StaffLogin({ area }: { area: "kitchen" | "admin" }) {
   const [u, setU] = useState("");
   const [p, setP] = useState("");
   const [busy, setBusy] = useState(false);
-  const demos = area === "kitchen" ? ["kitchen.outlet1", "kitchen.outlet2", "owner"] : ["owner"];
 
-  async function submit(username = u, password = p) {
+  async function submit() {
     setBusy(true);
     try {
-      const st = await staffLogin(username, password);
+      const st = await staffLogin(u, p);
       if (area === "admin" && st.role !== "owner") throw new Error("Owner access only");
       toast.success(`Welcome, ${st.name}`);
       nav({ to: area === "kitchen" ? "/kitchen" : "/admin" });
@@ -47,7 +47,7 @@ export function StaffLogin({ area }: { area: "kitchen" | "admin" }) {
         <h1 className="text-3xl font-bold">
           {area === "kitchen" ? "Kitchen login" : "Owner login"}
         </h1>
-        <p className="text-sm text-muted-foreground">Staff only. Bears welcome.</p>
+        <p className="text-sm text-muted-foreground">Staff only. Sessions are encrypted.</p>
         <label className="mt-5 block text-sm font-semibold">
           Username
           <input
@@ -57,40 +57,17 @@ export function StaffLogin({ area }: { area: "kitchen" | "admin" }) {
             className="mt-1.5 h-11 w-full rounded-xl border-2 border-input bg-background px-3 outline-none focus:border-primary"
           />
         </label>
-        <label className="mt-3 block text-sm font-semibold">
-          Password
-          <input
-            type="password"
+        <div className="mt-3">
+          <PasswordField
             value={p}
-            onChange={(e) => setP(e.target.value)}
+            onChange={setP}
             autoComplete="current-password"
-            className="mt-1.5 h-11 w-full rounded-xl border-2 border-input bg-background px-3 outline-none focus:border-primary"
+            inputClassName="bg-background"
           />
-        </label>
+        </div>
         <Button type="submit" size="lg" className="mt-5 w-full" disabled={busy || !u || !p}>
           {busy && <Loader2 className="animate-spin" />} Log in
         </Button>
-        <div className="mt-6 rounded-2xl bg-muted p-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Demo access · password "grizzly"
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {demos.map((d) => (
-              <button
-                type="button"
-                key={d}
-                onClick={() => {
-                  setU(d);
-                  setP("grizzly");
-                  submit(d, "grizzly");
-                }}
-                className="rounded-full bg-card px-3 py-1.5 text-sm font-semibold shadow-warm transition hover:bg-primary hover:text-primary-foreground active:scale-95"
-              >
-                {d}
-              </button>
-            ))}
-          </div>
-        </div>
       </motion.form>
     </div>
   );

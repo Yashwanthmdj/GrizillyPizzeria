@@ -14,18 +14,18 @@ export function ItemCustomizer({
 }: {
   item: MenuItem;
   outletId: string | null;
-  onAdd: (line: Omit<CartLine, "key">) => void;
+  onAdd: (line: Omit<CartLine, "key" | "lineId" | "lineStatus" | "prepMinutes">) => void;
 }) {
-  const [size, setSize] = useState<SizeKey>("Regular");
+  const [size, setSize] = useState<SizeKey>(item.sizes?.[0]?.key ?? "Small");
   const [tops, setTops] = useState<string[]>([]);
   const [qty, setQty] = useState(1);
   const [note, setNote] = useState("");
   useEffect(() => {
-    setSize("Regular");
+    setSize(item.sizes?.[0]?.key ?? "Small");
     setTops([]);
     setQty(1);
     setNote("");
-  }, [item.id]);
+  }, [item.id, item.sizes]);
 
   const chosenSize = item.sizes ? size : undefined;
   const price = unitPrice(item, outletId, chosenSize, tops);

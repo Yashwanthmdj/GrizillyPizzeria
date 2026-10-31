@@ -25,13 +25,14 @@ export function CartDrawer() {
   const found = db.coupons.find((c) => c.code === s.couponCode) ?? null;
   const coupon = found && validateCoupon(found, subtotal, Date.now()).ok ? found : null;
   const bill = computeBill(s.cart, db.loyalty, step, billOptions(db.settings, coupon));
-  const hasDrink = s.cart.some(
-    (l) => db.menu.find((m) => m.id === l.itemId)?.category === "Drinks",
+  const hasDip = s.cart.some(
+    (l) => db.menu.find((m) => m.id === l.itemId)?.category === "Dips",
   );
   const upsell = db.menu
     .filter(
       (m) =>
-        m.category === (hasDrink ? "Desserts" : "Drinks") &&
+        m.category === "Dips" &&
+        !hasDip &&
         (!s.outletId || m.availability[s.outletId]),
     )
     .slice(0, 3);
@@ -58,7 +59,7 @@ export function CartDrawer() {
             role="dialog"
             aria-label="Your cart"
             aria-modal="true"
-            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background shadow-lift"
+            className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col bg-background pb-[env(safe-area-inset-bottom)] shadow-lift"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -144,7 +145,7 @@ export function CartDrawer() {
               {s.cart.length > 0 && upsell.length > 0 && (
                 <div className="mt-6">
                   <p className="font-display text-lg">
-                    {hasDrink ? "Something sweet?" : "Add a drink?"}
+                    Add a dip?
                   </p>
                   <div className="no-scrollbar mt-2 flex gap-3 overflow-x-auto pb-2">
                     {upsell.map((m) => (

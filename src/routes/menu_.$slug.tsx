@@ -79,7 +79,7 @@ function ProductPage() {
             <Img src={live.image} alt={live.name} className="aspect-square w-full rounded-3xl" />
             <div>
               <p className="text-sm font-semibold text-muted-foreground">
-                {live.category} · {live.veg ? "Veg" : "Non-veg"}
+                {live.category} · 100% vegetarian
               </p>
               <ItemCustomizer
                 item={live}

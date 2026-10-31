@@ -11,14 +11,17 @@ export const Route = createFileRoute("/privacy")({
     ),
   component: () => (
     <LegalLayout title="Privacy">
-      <p>Placeholder text, to be replaced by the approved policy.</p>
       <p>
-        This demo stores your name, phone, cart and orders in the browser on this device. Nothing is
-        sent to a payment network or a messaging provider.
+        We keep the account you create (name, phone, hashed password), your orders, and messages you
+        send us on our servers so kitchens can cook and you can track pickup.
       </p>
       <p>
-        When a real backend is connected, this page will describe what is collected, why, and how
-        long it is kept.
+        Staff logins use encrypted sessions. Passwords are stored as one-way hashes, never as plain
+        text. Cart contents stay on your device until you place an order.
+      </p>
+      <p>
+        We do not sell your data. Write to hello@grizzlypizzeria.com to ask what we hold on your
+        account.
       </p>
     </LegalLayout>
   ),

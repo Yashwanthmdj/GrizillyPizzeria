@@ -1,7 +1,7 @@
 import { Clock, MapPin, Timer, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { busyness, canOrder, isOpenNow } from "@/services/outlet-status";
+import { busyness, canOrder, isOpenNow, isWithinHours } from "@/services/outlet-status";
 import type { Order, Outlet } from "@/services/types";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,13 @@ export function OutletCard({
           )}
         >
           <span className={cn("size-2 rounded-full bg-current", open && "animate-pulse")} />{" "}
-          {open ? (outlet.pauseOrders ? "Open · orders paused" : "Open now") : "Closed"}
+          {open
+            ? outlet.pauseOrders
+              ? "Open · orders paused"
+              : outlet.forceOpen && !isWithinHours(outlet)
+                ? "Open · staff override"
+                : "Open now"
+            : "Closed"}
         </span>
         <span
           className={cn(
@@ -57,7 +63,10 @@ export function OutletCard({
         </li>
         <li className="flex gap-2">
           <Timer className="size-4 shrink-0 text-primary" />
-          Wait time <b className="text-foreground">~{outlet.waitMinutes} min</b>
+          Next order ~<b className="text-foreground">{outlet.waitMinutes} min</b>
+          {outlet.minutesPerOrder
+            ? ` · ${outlet.queueLength ?? 0} cooking × ${outlet.minutesPerOrder} min each`
+            : ""}
         </li>
       </ul>
       <div className="mt-5 flex flex-wrap gap-2">

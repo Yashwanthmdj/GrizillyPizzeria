@@ -92,7 +92,7 @@ function OrdersAdmin() {
           className={fieldCls}
         >
           <option value="all">All payments</option>
-          <option value="online">Online (demo)</option>
+          <option value="online">Online</option>
           <option value="counter">Pay at counter</option>
         </select>
         <input
@@ -138,7 +138,7 @@ function OrdersAdmin() {
                   </td>
                   <td>{db.outlets.find((o) => o.id === order.outletId)?.short}</td>
                   <td>{order.status}</td>
-                  <td>{order.payment === "online" ? "Online demo" : "Counter"}</td>
+                  <td>{order.payment === "online" ? "Online" : "Counter"}</td>
                   <td>{inr(order.total)}</td>
                 </tr>
               ))}
@@ -189,7 +189,7 @@ function OrdersAdmin() {
               ))}
             </ol>
             <p className="mt-4 text-sm">
-              Payment: {current.payment === "online" ? "Online demo" : "Pay at counter"} ·{" "}
+              Payment: {current.payment === "online" ? "Online" : "Pay at counter"} ·{" "}
               {current.paid ? "Paid" : "Not collected"}
             </p>
             <p className="text-sm">

@@ -38,6 +38,7 @@ import { Route as KitchenIndexRouteImport } from './routes/kitchen.index'
 import { Route as KitchenMenuRouteImport } from './routes/kitchen.menu'
 import { Route as KitchenScanRouteImport } from './routes/kitchen.scan'
 import { Route as KitchenSettingsRouteImport } from './routes/kitchen.settings'
+import { Route as KitchenStaffRouteImport } from './routes/kitchen.staff'
 import { Route as KitchenLoginRouteImport } from './routes/kitchen_.login'
 import { Route as MenuSlugRouteImport } from './routes/menu_.$slug'
 import { Route as OrderIdRouteImport } from './routes/order.$id'
@@ -187,6 +188,11 @@ const KitchenSettingsRoute = KitchenSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => KitchenRoute,
 } as any)
+const KitchenStaffRoute = KitchenStaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => KitchenRoute,
+} as any)
 const KitchenLoginRoute = KitchenLoginRouteImport.update({
   id: '/kitchen_/login',
   path: '/kitchen/login',
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/kitchen/menu': typeof KitchenMenuRoute
   '/kitchen/scan': typeof KitchenScanRoute
   '/kitchen/settings': typeof KitchenSettingsRoute
+  '/kitchen/staff': typeof KitchenStaffRoute
   '/kitchen/login': typeof KitchenLoginRoute
   '/menu/$slug': typeof MenuSlugRoute
   '/order/$id': typeof OrderIdRoute
@@ -263,6 +270,7 @@ export interface FileRoutesByTo {
   '/kitchen/menu': typeof KitchenMenuRoute
   '/kitchen/scan': typeof KitchenScanRoute
   '/kitchen/settings': typeof KitchenSettingsRoute
+  '/kitchen/staff': typeof KitchenStaffRoute
   '/kitchen/login': typeof KitchenLoginRoute
   '/menu/$slug': typeof MenuSlugRoute
   '/order/$id': typeof OrderIdRoute
@@ -298,6 +306,7 @@ export interface FileRoutesById {
   '/kitchen/menu': typeof KitchenMenuRoute
   '/kitchen/scan': typeof KitchenScanRoute
   '/kitchen/settings': typeof KitchenSettingsRoute
+  '/kitchen/staff': typeof KitchenStaffRoute
   '/kitchen_/login': typeof KitchenLoginRoute
   '/menu_/$slug': typeof MenuSlugRoute
   '/order/$id': typeof OrderIdRoute
@@ -334,6 +343,7 @@ export interface FileRouteTypes {
     | '/kitchen/menu'
     | '/kitchen/scan'
     | '/kitchen/settings'
+    | '/kitchen/staff'
     | '/kitchen/login'
     | '/menu/$slug'
     | '/order/$id'
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/kitchen/menu'
     | '/kitchen/scan'
     | '/kitchen/settings'
+    | '/kitchen/staff'
     | '/kitchen/login'
     | '/menu/$slug'
     | '/order/$id'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/kitchen/menu'
     | '/kitchen/scan'
     | '/kitchen/settings'
+    | '/kitchen/staff'
     | '/kitchen_/login'
     | '/menu_/$slug'
     | '/order/$id'
@@ -634,6 +646,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof KitchenSettingsRouteImport
       parentRoute: typeof KitchenRoute
     }
+    '/kitchen/staff': {
+      id: '/kitchen/staff'
+      path: '/staff'
+      fullPath: '/kitchen/staff'
+      preLoaderRoute: typeof KitchenStaffRouteImport
+      parentRoute: typeof KitchenRoute
+    }
     '/kitchen_/login': {
       id: '/kitchen_/login'
       path: '/kitchen/login'
@@ -688,6 +707,7 @@ interface KitchenRouteChildren {
   KitchenMenuRoute: typeof KitchenMenuRoute
   KitchenScanRoute: typeof KitchenScanRoute
   KitchenSettingsRoute: typeof KitchenSettingsRoute
+  KitchenStaffRoute: typeof KitchenStaffRoute
   KitchenIndexRoute: typeof KitchenIndexRoute
 }
 
@@ -695,6 +715,7 @@ const KitchenRouteChildren: KitchenRouteChildren = {
   KitchenMenuRoute: KitchenMenuRoute,
   KitchenScanRoute: KitchenScanRoute,
   KitchenSettingsRoute: KitchenSettingsRoute,
+  KitchenStaffRoute: KitchenStaffRoute,
   KitchenIndexRoute: KitchenIndexRoute,
 }
 

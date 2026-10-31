@@ -14,7 +14,7 @@ export function OrderTracker({ order }: { order: Order }) {
         <p className="mt-1">Reason: {order.rejectReason ?? "Kitchen couldn't take it"}</p>
         {order.paid && (
           <p className="mt-1 text-sm text-muted-foreground">
-            Your online payment will be refunded in 3-5 days (demo).
+            Your online payment will be refunded in 3-5 days.
           </p>
         )}
       </div>
@@ -47,7 +47,7 @@ export function OrderTracker({ order }: { order: Order }) {
           </motion.div>
         </motion.div>
       </div>
-      <ol className="mt-4 grid grid-cols-5 gap-1 text-center text-xs font-semibold sm:text-sm">
+      <ol className="mt-4 grid grid-cols-5 gap-1 text-center text-[10px] font-semibold leading-tight sm:text-sm">
         {STATUS_FLOW.map((s, i) => (
           <li
             key={s}

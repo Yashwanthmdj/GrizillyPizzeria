@@ -15,10 +15,15 @@ import comboImg from "@/assets/menu-combo.jpg";
 
 export const Route = createFileRoute("/kitchen/menu")({ component: KMenu });
 
-const SIZES = [
-  { key: "Regular" as const, extra: 0 },
-  { key: "Medium" as const, extra: 120 },
-  { key: "Large" as const, extra: 240 },
+const FRY_SIZES = [
+  { key: "Small" as const, extra: 0 },
+  { key: "Medium" as const, extra: 80 },
+  { key: "Large" as const, extra: 170 },
+];
+const FRY_TOPS = [
+  { name: "Nachos", price: 60, veg: true },
+  { name: "Extra Cheese", price: 30, veg: true },
+  { name: "Kurkure", price: 40, veg: true },
 ];
 
 function KMenu() {
@@ -60,8 +65,9 @@ function KMenu() {
               image: comboImg,
               availability: { o1: true, o2: true },
               priceOverride: {},
-              sizes: SIZES,
+              sizes: undefined,
               toppings: [],
+              prepMinutes: 16,
             })
           }
         >
@@ -181,8 +187,8 @@ function Editor({ item, onClose }: { item: MenuItem; onClose: () => void }) {
             });
           upsertMenuItem({
             ...m,
-            sizes: m.category === "Pizzas" ? SIZES : undefined,
-            toppings: m.category === "Pizzas" ? toppings : undefined,
+            sizes: m.category === "Fries" ? FRY_SIZES : undefined,
+            toppings: m.category === "Fries" ? (toppings.length ? toppings : FRY_TOPS) : undefined,
           });
           toast.success("Menu saved · live on the customer menu");
           onClose();
@@ -229,7 +235,7 @@ function Editor({ item, onClose }: { item: MenuItem; onClose: () => void }) {
             onChange={(e) => setM({ ...m, description: e.target.value })}
           />
         </label>
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
           <label className="text-sm font-semibold">
             Category
             <select
@@ -252,10 +258,10 @@ function Editor({ item, onClose }: { item: MenuItem; onClose: () => void }) {
             />
           </label>
         </div>
+        <p className="mt-3 text-sm font-semibold text-muted-foreground">
+          100% vegetarian kitchen — this item stays veg.
+        </p>
         <div className="mt-3 flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm font-semibold">
-            <Switch checked={m.veg} onCheckedChange={(v) => setM({ ...m, veg: v })} /> Vegetarian
-          </label>
           <label className="text-sm font-semibold">
             Badge{" "}
             <select
@@ -272,17 +278,17 @@ function Editor({ item, onClose }: { item: MenuItem; onClose: () => void }) {
             </select>
           </label>
         </div>
-        {m.category === "Pizzas" && (
+        {m.category === "Fries" && (
           <label className="mt-3 block text-sm font-semibold">
             Toppings (name:price, comma separated)
             <input
               className={input}
               value={tops}
               onChange={(e) => setTops(e.target.value)}
-              placeholder="Extra cheese:60, Olives:40"
+              placeholder="Nachos:60, Extra Cheese:30, Kurkure:40"
             />
             <span className="text-xs font-normal text-muted-foreground">
-              Sizes: Regular / Medium (+120) / Large (+240)
+              Sizes: Small / Medium (+80) / Large (+170)
             </span>
           </label>
         )}

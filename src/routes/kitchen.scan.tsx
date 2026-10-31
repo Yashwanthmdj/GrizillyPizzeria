@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useKitchenOutletId } from "@/components/staff/StaffShell";
 import { SyncBadge } from "@/components/staff/SyncBadge";
-import { setOrderStatus, verifyScan, type ScanResult } from "@/services/api";
+import { confirmPickup, verifyScan, type ScanResult } from "@/services/api";
 
 export const Route = createFileRoute("/kitchen/scan")({ component: Scan });
 
@@ -132,9 +132,10 @@ function Scan() {
                 </p>
                 <ul className="mt-3 space-y-1 text-lg">
                   {result.order.lines.map((l) => (
-                    <li key={l.key}>
+                    <li key={l.lineId || l.key}>
                       {l.qty}× {l.name}
-                      {l.size ? ` (${l.size})` : ""}
+                      {l.size ? ` (${l.size})` : ""}{" "}
+                      <span className="text-sm opacity-80">({l.lineStatus})</span>
                     </li>
                   ))}
                 </ul>
@@ -147,8 +148,13 @@ function Scan() {
                 className="mt-6 w-full"
                 onClick={async () => {
                   try {
-                    await setOrderStatus(result.order.id, "Collected");
-                    toast.success(`#${result.order.number} handed over · points awarded`);
+                    const next = await confirmPickup(result.order.id);
+                    const leftover = next.lines.filter((l) => l.lineStatus !== "collected");
+                    toast.success(
+                      leftover.length
+                        ? `#${next.number} · ready items handed over, ${leftover.length} still cooking`
+                        : `#${next.number} fully handed over`,
+                    );
                     setResult(null);
                     setManual("");
                   } catch (error) {
@@ -156,7 +162,7 @@ function Scan() {
                   }
                 }}
               >
-                Mark handed over
+                Hand over ready items
               </Button>
             )}
             {!result.ok && (

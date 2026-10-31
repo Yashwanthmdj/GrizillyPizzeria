@@ -31,7 +31,7 @@ function ContactPage() {
       <PageHead
         eyebrow="Madhapur"
         title="Contact"
-        sub="Two outlets, one bear. Messages stay in this demo."
+        sub="Two outlets, one bear. We read every message."
       />
       <div className="mx-auto grid max-w-5xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-2">
         <div className="space-y-3">
@@ -56,13 +56,13 @@ function ContactPage() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  WhatsApp (demo)
+                  WhatsApp
                 </a>
               </div>
             </article>
           ))}
           <p className="text-sm text-muted-foreground">
-            Shop email {db.settings.email}. The WhatsApp button does not send a message.
+            Shop email {db.settings.email}.
           </p>
         </div>
         <form
@@ -75,7 +75,7 @@ function ContactPage() {
               await saveMessage({ name, phone, message, outletId });
               setStatus("done");
               setMessage("");
-              toast.success("Message saved in the demo store");
+              toast.success("Message sent");
             } catch (err) {
               setStatus("error");
               setError((err as Error).message);

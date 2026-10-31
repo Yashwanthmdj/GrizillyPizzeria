@@ -38,7 +38,7 @@ export function ItemSheet() {
             role="dialog"
             aria-modal="true"
             aria-label={item.name}
-            className="relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-3xl bg-background shadow-lift sm:max-w-lg sm:rounded-3xl"
+            className="relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)] shadow-lift sm:max-w-lg sm:rounded-3xl"
             transition={{ duration: 0.45, ease: EASE }}
           >
             <div ref={imgRef} className="relative h-52 shrink-0 sm:h-60">

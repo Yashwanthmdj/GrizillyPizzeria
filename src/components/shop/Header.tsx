@@ -25,10 +25,17 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-warm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:px-6">
-        <Link to="/" className="h-9 shrink-0 sm:h-10" aria-label="Grizzly Pizzeria home">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
+        <Link
+          to="/"
+          className="h-8 max-w-[38vw] shrink-0 sm:h-10 sm:max-w-none"
+          aria-label="Grizzly Pizzeria home"
+        >
           <Logo className="h-full" />
         </Link>
+        <span className="hidden shrink-0 rounded-full border border-secondary/45 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-secondary min-[380px]:inline-flex sm:text-[10px]">
+          100% Veg
+        </span>
         <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label="Main">
           {NAV.map((n) => (
             <Link
@@ -66,12 +73,12 @@ export function Header() {
             className="hidden h-11 items-center rounded-full px-3 text-sm font-semibold hover:bg-primary-deep sm:inline-flex"
             activeProps={{ className: "bg-primary-deep text-secondary" }}
           >
-            {session.phone ? "Account" : "Sign in"}
+            {session.phone ? session.customerName?.split(/\s+/)[0] || "Account" : "Sign in"}
           </Link>
           <button
             id="cart-target"
             onClick={() => setCartOpen(true)}
-            className="relative grid size-11 place-items-center rounded-full bg-secondary text-primary-deep transition hover:scale-105 active:scale-95"
+            className="relative grid size-10 place-items-center rounded-full bg-secondary text-primary-deep transition hover:scale-105 active:scale-95 sm:size-11"
             aria-label={`Open cart, ${count} items`}
           >
             <ShoppingBag className="size-5" />
@@ -88,7 +95,7 @@ export function Header() {
             )}
           </button>
           <button
-            className="grid size-11 place-items-center rounded-full md:hidden"
+            className="grid size-10 place-items-center rounded-full md:hidden sm:size-11"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
             aria-expanded={open}
@@ -122,7 +129,7 @@ export function Header() {
             className="min-h-11 rounded-xl px-3 py-3 font-semibold hover:bg-primary-deep"
             activeProps={{ className: "bg-primary-deep text-secondary" }}
           >
-            {session.phone ? "Account" : "Sign in"}
+            {session.phone ? session.customerName?.split(/\s+/)[0] || "Account" : "Sign in"}
           </Link>
           <select
             value={session.outletId ?? ""}

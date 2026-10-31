@@ -4,7 +4,8 @@ import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { Logo, EASE } from "@/components/brand";
 import { Button } from "@/components/ui/button";
-import { useDB, useSession, setSession } from "@/services/store";
+import { LoadingScreen } from "@/components/brand";
+import { useDB, useSession, useStoreReady, setSession } from "@/services/store";
 import { staffLogout } from "@/services/api";
 import type { Role } from "@/services/types";
 import { cn } from "@/lib/utils";
@@ -23,34 +24,44 @@ export function StaffShell({
 }) {
   const s = useSession();
   const db = useDB();
+  const ready = useStoreReady();
   const navigate = useNavigate();
   const kOutlet = useKitchenOutletId();
   const allowed: Role[] = area === "kitchen" ? ["kitchen", "owner"] : ["owner"];
+  if (!ready) return <LoadingScreen />;
   if (!s.staff || !allowed.includes(s.staff.role))
     return <Navigate to={area === "kitchen" ? "/kitchen/login" : "/admin/login"} />;
   const dark = area === "kitchen";
   return (
-    <div className={cn("min-h-screen bg-background text-foreground", dark && "kitchen-theme")}>
+    <div
+      className={cn(
+        "min-h-dvh w-full min-w-0 overflow-x-clip bg-background text-foreground",
+        dark && "kitchen-theme",
+      )}
+    >
       <header
         className={cn(
           "sticky top-0 z-40 border-b",
           dark ? "bg-card" : "bg-primary text-primary-foreground",
         )}
       >
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2 px-3 py-3 sm:gap-3 sm:px-4">
           <Link to="/" className="h-9">
             <Logo className={cn("h-full", dark && "rounded-lg bg-primary px-2 py-1")} />
           </Link>
           <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-primary-deep">
             {area === "kitchen" ? "Kitchen" : "Owner"}
           </span>
-          <nav className="flex flex-wrap gap-1" aria-label={`${area} navigation`}>
+          <nav
+            className="no-scrollbar -mx-1 flex max-w-full flex-1 gap-1 overflow-x-auto"
+            aria-label={`${area} navigation`}
+          >
             {nav.map((n) => (
               <Link
                 key={n.to}
                 to={n.to}
                 activeOptions={{ exact: true }}
-                className="rounded-full px-4 py-2.5 text-sm font-semibold opacity-80 transition hover:opacity-100"
+                className="shrink-0 rounded-full px-3 py-2 text-sm font-semibold opacity-80 transition hover:opacity-100 sm:px-4 sm:py-2.5"
                 activeProps={{
                   className: cn(
                     "!opacity-100",
@@ -99,7 +110,7 @@ export function StaffShell({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: EASE }}
-        className="mx-auto max-w-[1600px] px-4 py-6"
+        className="mx-auto max-w-[1600px] px-3 py-4 sm:px-4 sm:py-6"
       >
         {children}
       </motion.main>

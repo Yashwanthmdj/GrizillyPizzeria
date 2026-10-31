@@ -13,6 +13,7 @@ const menu: MenuItem[] = [
     image: "",
     availability: { o1: true },
     priceOverride: {},
+    prepMinutes: 16,
   },
 ];
 const outlets: Outlet[] = [
@@ -43,6 +44,7 @@ function order(
     lines: [
       {
         key: "k",
+        lineId: "ln_k",
         itemId: "m1",
         name: "Margherita",
         image: "",
@@ -50,6 +52,8 @@ function order(
         toppings: [],
         unitPrice: partial.total,
         qty: 1,
+        prepMinutes: 16,
+        lineStatus: "queued",
       },
     ],
     subtotal: partial.total,

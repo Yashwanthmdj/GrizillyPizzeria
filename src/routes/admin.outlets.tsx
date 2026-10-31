@@ -57,7 +57,7 @@ function OutletsAdmin() {
             address: String(data.get("address") ?? ""),
             hours: String(data.get("hours") ?? ""),
             phone: String(data.get("phone") ?? ""),
-            waitMinutes: Number(data.get("wait") ?? outlet.waitMinutes),
+            waitMinutes: Number(data.get("wait") ?? outlet.minutesPerOrder ?? 10),
           });
         }}
       >
@@ -89,14 +89,14 @@ function OutletsAdmin() {
           />
         </label>
         <label className="text-sm font-semibold">
-          Waiting time (minutes)
+          Minutes per order
           <input
             name="wait"
             type="number"
             min={5}
             max={120}
             key={`${outlet.id}-wait`}
-            defaultValue={outlet.waitMinutes}
+            defaultValue={outlet.minutesPerOrder ?? outlet.fallbackWaitMinutes ?? 10}
             className={`${fieldCls} mt-1`}
           />
         </label>

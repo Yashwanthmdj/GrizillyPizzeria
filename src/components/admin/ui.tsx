@@ -39,7 +39,7 @@ export function AdminEmpty({ title, body }: { title: string; body: string }) {
 
 export function useStoreGate() {
   const [status, setStatus] = useState<"loading" | "error" | "ready">("loading");
-  const [message, setMessage] = useState("The demo store didn't respond.");
+  const [message, setMessage] = useState("The kitchen store didn't respond.");
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let live = true;
