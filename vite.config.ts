@@ -6,7 +6,8 @@ import tsConfigPaths from "vite-tsconfig-paths";
 import { nitro } from "nitro/vite";
 
 // Explicit plugin list, previously wrapped by a hosted config package.
-// Nitro runs on production builds only and targets a Node server (Hostinger VPS).
+// Nitro runs on production builds only. Vercel gets its server output;
+// everywhere else this stays a Node server for a VPS.
 export default defineConfig(({ command, mode }) => {
   const loaded = loadEnv(mode, process.cwd(), "VITE_");
   const define: Record<string, string> = {};
@@ -31,7 +32,7 @@ export default defineConfig(({ command, mode }) => {
   ];
 
   if (command === "build") {
-    plugins.push(nitro({ preset: "node-server" }));
+    plugins.push(nitro({ preset: process.env.VERCEL ? "vercel" : "node-server" }));
   }
 
   return {

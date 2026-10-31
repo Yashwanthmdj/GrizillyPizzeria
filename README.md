@@ -25,7 +25,7 @@ npm test
 npm run lint
 ```
 
-`npm run build` emits a Node server (Nitro `node-server`) for a Hostinger VPS.
+`npm run build` emits a Node server (Nitro `node-server`) for a Hostinger VPS. On Vercel the same build uses the Vercel preset, so there is no `dist` folder to set as the output directory. Leave that project setting empty. Set `GRIZZLY_SESSION_PASSWORD` (32+ characters) in the Vercel environment. The shop database on Vercel lives in the instance’s temporary disk and resets when that instance goes away.
 
 ## Staff logins
 
