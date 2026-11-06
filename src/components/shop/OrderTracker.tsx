@@ -52,7 +52,7 @@ export function OrderTracker({ order }: { order: Order }) {
           <li
             key={s}
             className={cn(
-              "flex flex-col items-center gap-1",
+              "flex min-w-0 flex-col items-center gap-1 break-words",
               i <= idx ? "text-primary" : "text-muted-foreground",
             )}
           >

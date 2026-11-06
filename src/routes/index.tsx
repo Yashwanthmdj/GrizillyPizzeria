@@ -104,9 +104,9 @@ function Home() {
       <ReadyNotice orders={readyOrders} />
       <section
         ref={ref}
-        className="relative flex min-h-[calc(100svh-3.5rem)] items-center overflow-hidden bg-hero grain text-primary-foreground sm:min-h-[calc(100svh-4rem)]"
+        className="relative overflow-x-clip bg-hero grain text-primary-foreground md:flex md:min-h-[calc(100svh-4rem)] md:items-center"
       >
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-6 px-4 py-6 sm:px-6 sm:py-8 md:grid-cols-2 md:gap-10 lg:gap-14">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-2 md:gap-10 md:py-8 lg:gap-14">
           <motion.div style={{ y: y2 }} className="relative z-10 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <motion.p
@@ -127,7 +127,7 @@ function Home() {
                 100% Pure Veg
               </motion.p>
             </div>
-            <h1 className="mt-4 text-[clamp(2.15rem,6.6vw,5.25rem)] font-bold leading-[0.95]">
+            <h1 className="mt-4 max-w-full text-[clamp(2.15rem,10vw,5.25rem)] font-bold leading-[0.95]">
               {HEADLINE.map((w, i) => (
                 <motion.span
                   key={i}
@@ -165,16 +165,17 @@ function Home() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.85, ease: EASE }}
-              className="mt-5 flex flex-wrap gap-3 sm:mt-7"
+              className="mt-5 flex flex-col gap-3 min-[420px]:flex-row sm:mt-7"
             >
               <Button
                 variant="hero"
                 size="lg"
+                className="w-full min-[420px]:w-auto"
                 onClick={() => nav({ to: s.outletId ? "/menu" : "/outlets" })}
               >
                 Order now <ArrowRight />
               </Button>
-              <Button variant="heroOutline" size="lg" asChild>
+              <Button variant="heroOutline" size="lg" className="w-full min-[420px]:w-auto" asChild>
                 <Link to="/outlets">
                   <MapPin />{" "}
                   {s.outletId
@@ -186,7 +187,7 @@ function Home() {
           </motion.div>
           <motion.div
             style={{ y: y1 }}
-            className="relative mx-auto size-[min(18rem,70vw)] sm:size-[min(22rem,55vw)] md:size-[min(28rem,_36vw,_calc(100svh-12rem))] lg:size-[min(30rem,_34vw,_calc(100svh-12rem))]"
+            className="relative mx-auto size-[min(15.5rem,68vw)] sm:size-[min(20rem,52vw)] md:size-[min(28rem,_36vw,_calc(100svh-12rem))] lg:size-[min(30rem,_34vw,_calc(100svh-12rem))]"
           >
             <div className="absolute inset-[8%] rounded-full bg-primary-deep/50 blur-2xl" />
             <motion.img
@@ -225,7 +226,7 @@ function Home() {
       </section>
 
       <div
-        className="relative w-full max-w-full overflow-hidden border-y-4 border-primary-deep bg-secondary py-3 text-primary-deep"
+        className="relative w-full max-w-full overflow-hidden border-y-4 border-primary-deep bg-secondary py-3 text-primary-deep [contain:inline-size]"
         aria-hidden
       >
         <div className="marquee flex w-max max-w-none gap-10 whitespace-nowrap font-display text-xl font-semibold will-change-transform">

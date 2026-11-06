@@ -113,8 +113,8 @@ function OrderPage() {
         <OrderTracker order={o} />
         <ul className="grid gap-2 rounded-3xl bg-card p-5 shadow-warm sm:grid-cols-2">
           {o.lines.map((l) => (
-            <li key={l.lineId || l.key} className="flex items-center justify-between gap-2 text-sm">
-              <span>
+            <li key={l.lineId || l.key} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm">
+              <span className="min-w-0">
                 {l.qty}× {l.name}
                 {l.size ? ` (${l.size})` : ""}
               </span>
@@ -137,11 +137,12 @@ function OrderPage() {
                 <p className="text-sm font-bold uppercase tracking-widest text-primary-deep">
                   Show this at the counter
                 </p>
-                <div className="mx-auto mt-4 w-fit rounded-2xl bg-card p-4">
+                <div className="mx-auto mt-4 w-full max-w-[240px] rounded-2xl bg-card p-4">
                   <QRCodeSVG
                     id="order-qr"
                     value={qrValue}
                     size={210}
+                    className="h-auto w-full"
                     fgColor="#2A1412"
                     bgColor="transparent"
                     level="M"

@@ -227,7 +227,7 @@ function OrderCard({
         <span className="font-display text-2xl leading-none">{place}</span>
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col items-start gap-2 min-[480px]:flex-row min-[480px]:justify-between">
         <div>
           <p className="font-display text-3xl">#{o.number}</p>
           <p className="text-sm text-muted-foreground">

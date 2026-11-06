@@ -96,7 +96,7 @@ function Checkout() {
 
   return (
     <ShopLayout>
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-10">
         <h1 className="text-3xl font-bold sm:text-5xl">Checkout</h1>
         <div className="mt-6" aria-label={`Step ${step + 1} of 3`}>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -157,6 +157,7 @@ function Checkout() {
                     </section>
                     <Button
                       size="lg"
+                      className="w-full sm:w-auto"
                       disabled={!outlet || !canOrder(outlet)}
                       onClick={() => setStep(1)}
                     >
@@ -190,12 +191,13 @@ function Checkout() {
                         className={cn(inputCls, "h-auto py-2")}
                       />
                     </Field>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setStep(0)}>
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                      <Button variant="outline" className="w-full sm:w-auto" onClick={() => setStep(0)}>
                         Back
                       </Button>
                       <Button
                         size="lg"
+                        className="w-full sm:w-auto"
                         disabled={!verified || !name.trim()}
                         onClick={() => setStep(2)}
                       >
@@ -244,8 +246,8 @@ function Checkout() {
                         ))}
                       </div>
                     </section>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setStep(1)}>
+                    <div className="flex flex-col-reverse gap-2 sm:flex-row">
+                      <Button variant="outline" className="w-full sm:w-auto" onClick={() => setStep(1)}>
                         Back
                       </Button>
                       <Button

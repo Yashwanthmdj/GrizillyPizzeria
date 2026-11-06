@@ -134,28 +134,28 @@ function RootShell({ children }: { children: ReactNode }) {
 
 const LOADER_MS = INTRO_MS;
 let hideLoader = () => {};
-let loaderStarted = 0;
-
-if (typeof window !== "undefined" && !loaderStarted) {
-  loaderStarted = Date.now();
-  window.setTimeout(() => hideLoader(), LOADER_MS);
-}
+let loaderStart = 0;
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  // Branded intro, about 7 seconds. The timer is module-scoped so a strict-mode
-  // remount cannot cancel the only dismiss path.
+  // The 3.5s clock starts when this screen mounts, not when the script is parsed.
+  // On a phone the script can take longer than the intro, which used to dismiss
+  // the screen before it painted. The start time is module-scoped so a strict-mode
+  // remount keeps the same deadline and schedules a fresh timeout.
   const [ready, setReady] = useState(false);
   const [fading, setFading] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
   useEffect(() => {
     setReady(true);
     hideLoader = () => setFading(true);
-    if (loaderStarted && Date.now() - loaderStarted >= LOADER_MS) hideLoader();
+    if (!loaderStart) loaderStart = Date.now();
+    const remaining = Math.max(0, LOADER_MS - (Date.now() - loaderStart));
+    const t = window.setTimeout(() => hideLoader(), remaining);
+    return () => window.clearTimeout(t);
   }, []);
   useEffect(() => {
     if (!fading) return;
-    const t = window.setTimeout(() => setShowLoader(false), 700);
+    const t = window.setTimeout(() => setShowLoader(false), 450);
     return () => window.clearTimeout(t);
   }, [fading]);
 

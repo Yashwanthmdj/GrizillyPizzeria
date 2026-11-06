@@ -6,7 +6,7 @@ const LOGO = "/brand/logo.png";
 const BEAR = "/brand/bear.png";
 
 export const EASE = [0.22, 1, 0.36, 1] as const;
-export const INTRO_MS = 7000;
+export const INTRO_MS = 3500;
 
 export function Logo({ className, onRed = true }: { className?: string; onRed?: boolean }) {
   return (
@@ -52,26 +52,26 @@ export function LoadingScreen({
   return (
     <motion.div
       animate={{ opacity: fading ? 0 : 1 }}
-      transition={{ duration: 0.7, ease: EASE }}
-      className="pointer-events-none fixed inset-0 z-[100] grid place-items-center overflow-hidden bg-hero grain"
+      transition={{ duration: 0.45, ease: EASE }}
+      className="pointer-events-none fixed top-0 left-0 z-[100] flex h-dvh w-dvw items-center justify-center overflow-hidden bg-hero grain"
       role="status"
       aria-label="Loading Grizzly Pizzeria"
     >
       <motion.span
         aria-hidden
-        className="absolute size-72 rounded-full bg-secondary/25 blur-2xl"
+        className="absolute size-56 rounded-full bg-secondary/25 blur-2xl sm:size-72"
         initial={{ scale: 0.6, opacity: 0 }}
         animate={reduce ? { scale: 1, opacity: 0.7 } : { scale: [0.7, 1.15, 0.95], opacity: [0, 0.85, 0.55] }}
-        transition={reduce ? { duration: 0.6 } : { duration: 3.4, ease: EASE, repeat: Infinity, repeatType: "mirror" }}
+        transition={reduce ? { duration: 0.4 } : { duration: 2.2, ease: EASE, repeat: Infinity, repeatType: "mirror" }}
       />
       <motion.span
         aria-hidden
-        className="absolute size-48 rounded-full border border-secondary/50"
+        className="absolute size-36 rounded-full border border-secondary/50 sm:size-48"
         initial={{ scale: 0.4, opacity: 0 }}
         animate={reduce ? { scale: 1, opacity: 0.4 } : { scale: [0.55, 1.35], opacity: [0.55, 0] }}
-        transition={reduce ? { duration: 0.6 } : { duration: 2.8, ease: EASE, repeat: Infinity }}
+        transition={reduce ? { duration: 0.4 } : { duration: 1.8, ease: EASE, repeat: Infinity }}
       />
-      <div className="relative flex flex-col items-center gap-7 px-6">
+      <div className="relative flex max-h-full w-full max-w-sm flex-col items-center gap-5 px-6 sm:gap-7">
         <motion.div
           initial={{ opacity: 0, scale: 0.72, y: 28 }}
           animate={
@@ -81,8 +81,8 @@ export function LoadingScreen({
           }
           transition={
             reduce
-              ? { duration: 0.5, ease: EASE }
-              : { duration: 2.4, ease: EASE, times: [0, 0.45, 0.72, 1] }
+              ? { duration: 0.35, ease: EASE }
+              : { duration: 1.15, ease: EASE, times: [0, 0.45, 0.72, 1] }
           }
         >
           <motion.div
@@ -90,25 +90,25 @@ export function LoadingScreen({
             transition={
               reduce
                 ? { duration: 0.2 }
-                : { duration: 2.6, ease: EASE, repeat: Infinity, delay: 2.2 }
+                : { duration: 1.8, ease: EASE, repeat: Infinity, delay: 1.05 }
             }
           >
-            <BearMark className="h-40 w-auto drop-shadow-xl sm:h-48" />
+            <BearMark className="h-28 w-auto max-h-[26dvh] drop-shadow-xl sm:h-44 sm:max-h-none" />
           </motion.div>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: reduce ? 0.1 : 0.85, duration: 0.8, ease: EASE }}
+          transition={{ delay: reduce ? 0.05 : 0.28, duration: 0.5, ease: EASE }}
           className="flex flex-col items-center gap-3"
         >
-          <Logo className="h-12 sm:h-14" />
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-secondary">
+          <Logo className="h-10 sm:h-14" />
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary sm:text-xs sm:tracking-[0.28em]">
             100% pure veg
           </p>
         </motion.div>
         {intro && (
-          <div className="h-1.5 w-44 overflow-hidden rounded-full bg-primary-deep/50">
+          <div className="h-1.5 w-full max-w-44 overflow-hidden rounded-full bg-primary-deep/50">
             <motion.div
               className="h-full rounded-full bg-secondary"
               initial={{ width: "0%" }}

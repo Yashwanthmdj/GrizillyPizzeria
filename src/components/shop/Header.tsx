@@ -25,15 +25,15 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-warm">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-3 sm:h-16 sm:gap-3 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-7xl items-center gap-1.5 px-3 sm:h-16 sm:gap-3 sm:px-6">
         <Link
           to="/"
-          className="h-8 max-w-[38vw] shrink-0 sm:h-10 sm:max-w-none"
+          className="block h-8 min-w-0 max-w-[46%] shrink overflow-hidden sm:h-10 sm:max-w-none"
           aria-label="Grizzly Pizzeria home"
         >
-          <Logo className="h-full" />
+          <Logo className="h-full max-w-full" />
         </Link>
-        <span className="hidden shrink-0 rounded-full border border-secondary/45 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.16em] text-secondary min-[380px]:inline-flex sm:text-[10px]">
+        <span className="hidden shrink-0 rounded-full border border-secondary/45 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-secondary sm:inline-flex">
           100% Veg
         </span>
         <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label="Main">
