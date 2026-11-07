@@ -53,6 +53,28 @@ Each menu item has prep minutes. Clock cooks in on **Crew**. Wait is a queue sim
 - `src/services/pricing.ts` — bill, coupons, loyalty maths.
 - `public/brand` — logo and bear mark.
 
+## Interakt WhatsApp
+
+Server-side only. Copy `.env.example` to `.env` and set:
+
+- `INTERAKT_API_KEY` — Secret Key from Interakt → Settings → Developer Setting
+- `INTERAKT_ENABLED=true`
+- `INTERAKT_DEFAULT_COUNTRY_CODE=+91`
+- Keep `INTERAKT_ORDER_CONFIRMATION_APPROVED` / `INTERAKT_MARKETING_APPROVED` as `false` until Meta marks those templates APPROVED
+
+OTP template in use: `grizzly_login_otp` (Copy Code). Register, password reset, and “Sign in with WhatsApp code” send a 6-digit OTP. Codes are hashed in SQLite (`otp_challenges`); plaintext is never returned to the client.
+
+Order confirmation enqueues to `whatsapp_outbox` after `placeOrder` but does not send until the approval flag is true. Checkout never waits on WhatsApp.
+
+Webhook endpoint (register after you have HTTPS): `POST /api/interakt-webhook` with `INTERAKT_WEBHOOK_SECRET` matching Interakt Developer Settings.
+
+Local checks (no Postman):
+
+```sh
+npm test                 # includes mocked Interakt unit tests
+npm run test:interakt    # offline HMAC + optional live OTP when INTERAKT_TEST_PHONE is set
+```
+
 ## // INTEGRATION: points
 
 - `src/lib/report-error.ts` — error reporting (Sentry or similar).

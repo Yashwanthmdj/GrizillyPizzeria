@@ -38,16 +38,21 @@ import {
   assertCustomerPassword,
   assertStaffPassword,
   assertUsername,
-  DEMO_OTP,
+  generateOtp,
   hashOtp,
   hashPassword,
   staffSecretFingerprint,
   verifyPassword,
 } from "./passwords";
+import { sendWhatsAppOtp } from "./whatsapp";
+import { enqueueOrderConfirmationSafe } from "./whatsapp-outbox";
 import type { AuthSession } from "./session";
 
 const FAIL_LIMIT = 5;
 const LOCK_MS = 15 * 60_000;
+const OTP_TTL_MS = 5 * 60_000;
+const OTP_RESEND_MS = 45_000;
+const OTP_DIGITS = 6;
 const hits = new Map<string, number[]>();
 
 function rateOk(key: string, limit = 10, windowMs = 10 * 60_000) {
@@ -81,7 +86,8 @@ function maybeN(row: object, key: string) {
   return v == null ? undefined : Number(v);
 }
 function env(key: string) {
-  return process.env[key];
+  const v = process.env[key]?.trim();
+  return v ? v : undefined;
 }
 
 async function meta(key: string) {
@@ -166,6 +172,11 @@ async function syncStaffPasswords() {
   const fp = staffSecretFingerprint(secrets.map((s) => `${s.username}:${s.password}:${s.role}:${s.outletId ?? ""}`));
   if ((await meta("staff_fp")) === fp) return;
   for (const row of secrets) {
+    // Customer signup also hits ensureSeed; keep staff sync from blocking shoppers.
+    if (row.password.length < 10) {
+      console.error("[staff] password env value is too short after dotenv parse; quote values that contain #");
+      continue;
+    }
     assertStaffPassword(row.password);
     const hash = await hashPassword(row.password);
     await exec(
@@ -216,7 +227,9 @@ async function loadLoyalty(): Promise<LoyaltyRule> {
 
 async function loadCustomers(): Promise<Customer[]> {
   const rs = await exec(
-    "SELECT phone, name, username, email, points, lifetime_points, visits, streak, last_visit, history FROM customers",
+    `SELECT phone, name, username, email, points, lifetime_points, visits, streak, last_visit, history,
+            wa_marketing_consent, wa_marketing_consent_at, wa_marketing_consent_source
+     FROM customers`,
   );
   return rs.rows.map((r) => ({
     phone: s(r, "phone"),
@@ -229,6 +242,9 @@ async function loadCustomers(): Promise<Customer[]> {
     streak: n(r, "streak"),
     lastVisit: maybeN(r, "last_visit"),
     history: parseJson(s(r, "history"), [] as Customer["history"]),
+    waMarketingConsent: n(r, "wa_marketing_consent") === 1,
+    waMarketingConsentAt: maybeN(r, "wa_marketing_consent_at"),
+    waMarketingConsentSource: maybeS(r, "wa_marketing_consent_source") ?? undefined,
   }));
 }
 
@@ -486,6 +502,54 @@ export async function customerPasswordLogin(input: { username: string; password:
   };
 }
 
+async function assertOtpCooldown(phone: string) {
+  const prev = await exec("SELECT sent_at FROM otp_challenges WHERE phone = ?", [phone]);
+  const row = prev.rows[0];
+  if (!row) return;
+  const wait = OTP_RESEND_MS - (Date.now() - n(row, "sent_at"));
+  if (wait > 0) {
+    throw new Error(`Wait ${Math.ceil(wait / 1000)}s before requesting another code.`);
+  }
+}
+
+async function issueOtpChallenge(input: {
+  phone: string;
+  username: string;
+  purpose: "register" | "reset" | "login";
+  payload: string | null;
+}) {
+  if (!rateOk(`otp:${input.phone}`, 8, 10 * 60_000)) {
+    throw new Error("Too many OTP requests. Wait a few minutes.");
+  }
+  await assertOtpCooldown(input.phone);
+
+  const code = generateOtp(OTP_DIGITS);
+  const now = Date.now();
+  await exec(
+    `INSERT INTO otp_challenges (phone, username, purpose, code_hash, payload, expires_at, attempts, sent_at)
+     VALUES (?, ?, ?, ?, ?, ?, 0, ?)
+     ON CONFLICT(phone) DO UPDATE SET
+       username = excluded.username,
+       purpose = excluded.purpose,
+       code_hash = excluded.code_hash,
+       payload = excluded.payload,
+       expires_at = excluded.expires_at,
+       attempts = 0,
+       sent_at = excluded.sent_at`,
+    [input.phone, input.username, input.purpose, hashOtp(input.phone, code), input.payload, now + OTP_TTL_MS, now],
+  );
+
+  let via: "whatsapp" | "dev" = "dev";
+  try {
+    via = await sendWhatsAppOtp(input.phone, code);
+  } catch {
+    await exec("DELETE FROM otp_challenges WHERE phone = ?", [input.phone]);
+    throw new Error("Could not send the WhatsApp code. Try again shortly.");
+  }
+
+  return { phone: input.phone, via, resendAfterSec: Math.ceil(OTP_RESEND_MS / 1000) };
+}
+
 export async function requestCustomerOtp(input: {
   username: string;
   phone?: string | undefined;
@@ -519,22 +583,27 @@ export async function requestCustomerOtp(input: {
     payload = JSON.stringify({ username });
   }
 
-  if (!rateOk(`otp:${phone}`, 8, 10 * 60_000)) throw new Error("Too many OTP requests. Wait a few minutes.");
+  return issueOtpChallenge({ phone, username, purpose: input.intent, payload });
+}
 
-  await exec(
-    `INSERT INTO otp_challenges (phone, username, purpose, code_hash, payload, expires_at, attempts, sent_at)
-     VALUES (?, ?, ?, ?, ?, ?, 0, ?)
-     ON CONFLICT(phone) DO UPDATE SET
-       username = excluded.username,
-       purpose = excluded.purpose,
-       code_hash = excluded.code_hash,
-       payload = excluded.payload,
-       expires_at = excluded.expires_at,
-       attempts = 0,
-       sent_at = excluded.sent_at`,
-    [phone, username, input.intent, hashOtp(phone, DEMO_OTP), payload, Date.now() + 5 * 60_000, Date.now()],
-  );
-  return { phone, via: "dev" as const, devCode: DEMO_OTP };
+/** Phone OTP sign-in for existing customers (WhatsApp code). */
+export async function requestPhoneLoginOtp(input: { phone: string }) {
+  await ensureSeed();
+  const phone = input.phone.replace(/\D/g, "");
+  if (phone.length !== 10) throw new Error("Enter a 10-digit phone number.");
+
+  // Generic response path: still require an account, but use a bland error.
+  const rs = await exec("SELECT phone, username, name FROM customers WHERE phone = ?", [phone]);
+  const row = rs.rows[0];
+  if (!row) throw new Error("No account for that phone. Create an account first.");
+  const username = maybeS(row, "username") ?? phone;
+
+  return issueOtpChallenge({
+    phone,
+    username,
+    purpose: "login",
+    payload: JSON.stringify({ username, name: s(row, "name") }),
+  });
 }
 
 export async function verifyCustomerOtp(input: {
@@ -545,48 +614,58 @@ export async function verifyCustomerOtp(input: {
   await ensureSeed();
   const phone = input.phone.replace(/\D/g, "");
   const code = input.code.replace(/\D/g, "");
-  if (phone.length !== 10 || code.length !== 4) throw new Error("Enter the 4-digit code.");
-  const rs = await exec(
-    "SELECT username, purpose, code_hash, payload, expires_at, attempts FROM otp_challenges WHERE phone = ?",
-    [phone],
-  );
-  const row = rs.rows[0];
-  if (!row) throw new Error("Ask for a new code first.");
-  if (n(row, "expires_at") < Date.now()) throw new Error("That code expired. Request a new one.");
-  const tries = n(row, "attempts") + 1;
-  if (tries > 5) {
+  if (phone.length !== 10 || code.length !== OTP_DIGITS) {
+    throw new Error(`Enter the ${OTP_DIGITS}-digit code.`);
+  }
+
+  return serialize(async () => {
+    const rs = await exec(
+      "SELECT username, purpose, code_hash, payload, expires_at, attempts FROM otp_challenges WHERE phone = ?",
+      [phone],
+    );
+    const row = rs.rows[0];
+    if (!row) throw new Error("Ask for a new code first.");
+    if (n(row, "expires_at") < Date.now()) {
+      await exec("DELETE FROM otp_challenges WHERE phone = ?", [phone]);
+      throw new Error("That code expired. Request a new one.");
+    }
+    const tries = n(row, "attempts") + 1;
+    if (tries > 5) {
+      await exec("DELETE FROM otp_challenges WHERE phone = ?", [phone]);
+      throw new Error("Too many tries. Request a new code.");
+    }
+    if (hashOtp(phone, code) !== s(row, "code_hash")) {
+      await exec("UPDATE otp_challenges SET attempts = ? WHERE phone = ?", [tries, phone]);
+      throw new Error("Wrong code. Try again.");
+    }
+    // Consume immediately (concurrency-safe within serialize queue).
     await exec("DELETE FROM otp_challenges WHERE phone = ?", [phone]);
-    throw new Error("Too many tries. Request a new code.");
-  }
-  if (code !== DEMO_OTP && hashOtp(phone, code) !== s(row, "code_hash")) {
-    await exec("UPDATE otp_challenges SET attempts = ? WHERE phone = ?", [tries, phone]);
-    throw new Error("Wrong code. Try again.");
-  }
-  await exec("DELETE FROM otp_challenges WHERE phone = ?", [phone]);
-  const purpose = s(row, "purpose");
-  const username = s(row, "username");
-  if (purpose === "register") {
-    const payload = parseJson<{ username: string; name: string; passwordHash: string }>(
-      maybeS(row, "payload") ?? null,
-      { username, name: username, passwordHash: "" },
-    );
-    if (!payload.passwordHash) throw new Error("Registration expired. Start again.");
-    await exec(
-      `INSERT INTO customers (phone, name, username, email, password_hash, points, lifetime_points, visits, streak, history)
-       VALUES (?, ?, ?, NULL, ?, 0, 0, 0, 0, '[]')`,
-      [phone, payload.name, payload.username, payload.passwordHash],
-    );
-    return { phone, name: payload.name, username: payload.username };
-  }
-  if (purpose === "reset") {
-    assertCustomerPassword(input.newPassword ?? "");
-    const hash = await hashPassword(input.newPassword!);
-    await exec("UPDATE customers SET password_hash = ? WHERE phone = ?", [hash, phone]);
-  }
-  const user = await exec("SELECT phone, name, username FROM customers WHERE phone = ?", [phone]);
-  const u = user.rows[0];
-  if (!u) throw new Error("No account for that phone.");
-  return { phone, name: s(u, "name"), username: maybeS(u, "username") ?? username };
+
+    const purpose = s(row, "purpose");
+    const username = s(row, "username");
+    if (purpose === "register") {
+      const payload = parseJson<{ username: string; name: string; passwordHash: string }>(
+        maybeS(row, "payload") ?? null,
+        { username, name: username, passwordHash: "" },
+      );
+      if (!payload.passwordHash) throw new Error("Registration expired. Start again.");
+      await exec(
+        `INSERT INTO customers (phone, name, username, email, password_hash, points, lifetime_points, visits, streak, history)
+         VALUES (?, ?, ?, NULL, ?, 0, 0, 0, 0, '[]')`,
+        [phone, payload.name, payload.username, payload.passwordHash],
+      );
+      return { phone, name: payload.name, username: payload.username };
+    }
+    if (purpose === "reset") {
+      assertCustomerPassword(input.newPassword ?? "");
+      const hash = await hashPassword(input.newPassword!);
+      await exec("UPDATE customers SET password_hash = ? WHERE phone = ?", [hash, phone]);
+    }
+    const user = await exec("SELECT phone, name, username FROM customers WHERE phone = ?", [phone]);
+    const u = user.rows[0];
+    if (!u) throw new Error("No account for that phone.");
+    return { phone, name: s(u, "name"), username: maybeS(u, "username") ?? username };
+  });
 }
 
 async function saveOrder(order: Order) {
@@ -686,6 +765,14 @@ export async function placeOrder(
       ]);
     }
     await stamp(order.customerName, "order.place", `#${order.number} placed (${input.payment})`);
+    // WhatsApp confirmation is best-effort and never blocks checkout.
+    enqueueOrderConfirmationSafe({
+      orderId: order.id,
+      phone: order.phone,
+      customerName: order.customerName,
+      orderNumber: order.number,
+      orderTotal: order.total,
+    });
     return order;
   });
 }

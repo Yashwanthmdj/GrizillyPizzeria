@@ -1,5 +1,8 @@
-import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
+import { createHmac, createHash, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { customerPasswordIssue } from "@/lib/customer-auth";
+import { dataDir } from "./paths";
 
 const N = 16384;
 const R = 8;
@@ -38,8 +41,27 @@ export function staffSecretFingerprint(parts: string[]) {
   return createHash("sha256").update(parts.join("\0")).digest("hex");
 }
 
+function otpPepper() {
+  const fromEnv = process.env["GRIZZLY_SESSION_PASSWORD"]?.trim();
+  if (fromEnv && fromEnv.length >= 32) return fromEnv;
+  try {
+    const existing = readFileSync(path.join(dataDir(), "session.key"), "utf8").trim();
+    if (existing.length >= 32) return existing;
+  } catch {
+    /* boot before session key exists */
+  }
+  return process.env["INTERAKT_API_KEY"]?.trim() || "grizzly-otp-dev-pepper";
+}
+
+/** HMAC of short numeric OTP — never store plaintext. */
 export function hashOtp(phone: string, code: string) {
-  return createHash("sha256").update(`gp-otp:${phone}:${code}`).digest("hex");
+  return createHmac("sha256", otpPepper()).update(`gp-otp:${phone}:${code}`).digest("hex");
+}
+
+export function generateOtp(digits = 6) {
+  const max = 10 ** digits;
+  const n = randomInt(0, max);
+  return String(n).padStart(digits, "0");
 }
 
 export function assertUsername(raw: string) {
@@ -51,9 +73,6 @@ export function assertUsername(raw: string) {
 export function assertStaffPassword(plain: string) {
   if (plain.length < 10) throw new Error("Staff password is too short.");
 }
-
-/** Demo shop OTP — used until WhatsApp is wired. */
-export const DEMO_OTP = "1234";
 
 export function assertCustomerPassword(plain: string) {
   const issue = customerPasswordIssue(plain);

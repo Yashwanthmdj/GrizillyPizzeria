@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BearMark, LoadingScreen } from "@/components/brand";
 import { PageHead, ShopLayout, seo } from "@/components/shop/ShopLayout";
 import { AuthPanel } from "@/components/shop/AuthPanel";
-import { signOutCustomer, updateProfile } from "@/services/api";
+import { setWhatsAppMarketingConsent, signOutCustomer, updateProfile } from "@/services/api";
 import { tierFor } from "@/services/pricing";
 import { useDB, useSession, useStoreReady } from "@/services/store";
 
@@ -34,6 +34,7 @@ function AccountPage() {
       points={me.points}
       visits={me.visits}
       tier={tierFor(me.lifetimePoints, db.loyalty).current?.name ?? "Cub"}
+      waMarketingConsent={!!me.waMarketingConsent}
     />
   );
 }
@@ -56,6 +57,7 @@ function Profile({
   points,
   visits,
   tier,
+  waMarketingConsent,
 }: {
   name: string;
   email: string;
@@ -63,9 +65,11 @@ function Profile({
   points: number;
   visits: number;
   tier: string;
+  waMarketingConsent: boolean;
 }) {
   const [formName, setName] = useState(name);
   const [formEmail, setEmail] = useState(email);
+  const [marketing, setMarketing] = useState(waMarketingConsent);
   const [error, setError] = useState("");
   return (
     <ShopLayout>
@@ -79,6 +83,9 @@ function Profile({
             setError("");
             try {
               await updateProfile({ name: formName, email: formEmail });
+              if (marketing !== waMarketingConsent) {
+                await setWhatsAppMarketingConsent(marketing, "account");
+              }
               toast.success("Details saved");
             } catch (err) {
               setError((err as Error).message);
@@ -111,6 +118,20 @@ function Profile({
               readOnly
               className="mt-1 h-11 w-full rounded-xl border-2 border-input bg-muted px-3"
             />
+          </label>
+          <label className="flex items-start gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={marketing}
+              onChange={(e) => setMarketing(e.target.checked)}
+            />
+            <span>
+              WhatsApp offers
+              <span className="mt-0.5 block font-normal text-muted-foreground">
+                Occasional deals on WhatsApp. Order updates and login codes still send when needed.
+              </span>
+            </span>
           </label>
           {error && (
             <p className="text-sm font-semibold text-primary" role="alert">

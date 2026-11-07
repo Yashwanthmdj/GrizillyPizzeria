@@ -78,6 +78,29 @@ CREATE TABLE IF NOT EXISTS audit (
   detail TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS whatsapp_outbox (
+  id TEXT PRIMARY KEY,
+  idempotency_key TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  template_name TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  status TEXT NOT NULL,
+  provider_message_id TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  sent_at INTEGER
+);
+CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
+  id TEXT PRIMARY KEY,
+  event_key TEXT NOT NULL UNIQUE,
+  event_type TEXT NOT NULL,
+  provider_message_id TEXT,
+  payload TEXT NOT NULL,
+  received_at INTEGER NOT NULL
+);
 `;
 
 export async function getClient() {
@@ -94,6 +117,17 @@ export async function getClient() {
         await db.execute("ALTER TABLE customers ADD COLUMN username TEXT");
       } catch {
         /* already present */
+      }
+      for (const alter of [
+        "ALTER TABLE customers ADD COLUMN wa_marketing_consent INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE customers ADD COLUMN wa_marketing_consent_at INTEGER",
+        "ALTER TABLE customers ADD COLUMN wa_marketing_consent_source TEXT",
+      ]) {
+        try {
+          await db.execute(alter);
+        } catch {
+          /* already present */
+        }
       }
       client = db;
       return db;

@@ -118,17 +118,53 @@ export const requestCustomerOtpFn = createServerFn({ method: "POST" })
     return requestCustomerOtp(data);
   });
 
+export const requestPhoneLoginOtpFn = createServerFn({ method: "POST" })
+  .validator(z.object({ phone: z.string().min(10).max(15) }))
+  .handler(async ({ data }) => {
+    const { requestPhoneLoginOtp } = await import("@/data/repo");
+    return requestPhoneLoginOtp(data);
+  });
+
 export const verifyCustomerOtpFn = createServerFn({ method: "POST" })
   .validator(
     z.object({
       phone: z.string().min(10),
-      code: z.string().min(4),
+      code: z.string().min(6).max(6),
       newPassword: z.string().optional(),
     }),
   )
   .handler(async ({ data }) => {
     const { verifyCustomerOtp } = await import("@/data/repo");
     return startCustomerSession(await verifyCustomerOtp(data));
+  });
+
+export const setMarketingConsentFn = createServerFn({ method: "POST" })
+  .validator(z.object({ consented: z.boolean(), source: z.string().min(1).max(64) }))
+  .handler(async ({ data }) => {
+    const auth = await customerActor();
+    if (!auth?.phone) throw new Error("Sign in first.");
+    const { setMarketingConsent } = await import("@/data/whatsapp-outbox");
+    await setMarketingConsent(auth.phone, data.consented, data.source);
+    return { ok: true };
+  });
+
+export const sendMarketingCampaignFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      phone: z.string().min(10),
+      campaignKey: z.string().min(1).max(64),
+      bodyValues: z.array(z.string()).optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const auth = await staffActor();
+    if (!auth || auth.role !== "owner") throw new Error("Owner access only.");
+    const { enqueueMarketingIfConsented } = await import("@/data/whatsapp-outbox");
+    return enqueueMarketingIfConsented({
+      phone: data.phone,
+      campaignKey: data.campaignKey,
+      ...(data.bodyValues ? { bodyValues: data.bodyValues } : {}),
+    });
   });
 
 export const customerLogoutFn = createServerFn({ method: "POST" }).handler(async () => {

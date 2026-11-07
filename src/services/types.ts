@@ -116,6 +116,10 @@ export interface Customer {
   email?: string | undefined;
   lastVisit?: number | undefined;
   history: { at: number; delta: number; label: string }[];
+  /** Opt-in for WhatsApp marketing templates (transactional OTP/orders are separate). */
+  waMarketingConsent?: boolean | undefined;
+  waMarketingConsentAt?: number | undefined;
+  waMarketingConsentSource?: string | undefined;
 }
 
 export type WorkerRole = "cook" | "counter";

@@ -32,7 +32,7 @@ export default defineConfig(({ command, mode }) => {
   ];
 
   if (command === "build") {
-    plugins.push(nitro({ preset: process.env.VERCEL ? "vercel" : "node-server" }));
+    plugins.push(nitro({ preset: process.env["VERCEL"] ? "vercel" : "node-server" }));
   }
 
   return {

@@ -1,15 +1,40 @@
-function e164In(phone: string) {
-  const d = phone.replace(/\D/g, "");
-  if (d.length === 10) return `91${d}`;
-  if (d.startsWith("91") && d.length === 12) return d;
-  return d;
-}
+import { loadLocalEnv } from "./load-env";
+import { interaktConfig, sendAuthenticationOtp } from "./interakt";
+
+loadLocalEnv();
 
 export type WhatsAppChannel = "whatsapp" | "dev";
 
+/**
+ * Deliver a customer OTP. Prefers Interakt when enabled; otherwise falls back to
+ * Twilio / Meta Graph if configured. Never logs the OTP value.
+ */
 export async function sendWhatsAppOtp(phone: string, code: string): Promise<WhatsAppChannel> {
-  const text = `Your Grizzly Pizzeria code is ${code}. It expires in 5 minutes. Don't share it.`;
-  const to = e164In(phone);
+  const cfg = interaktConfig();
+  if (cfg.enabled) {
+    if (!cfg.apiKey) {
+      throw new Error("WhatsApp is enabled but INTERAKT_API_KEY is missing.");
+    }
+    // No callbackData on auth OTP — keep the Interakt payload docs-minimal.
+    const result = await sendAuthenticationOtp(phone, code);
+    if (!result.accepted) {
+      console.error("[grizzly-otp] Interakt send failed", {
+        phone: phone.replace(/\d(?=\d{4})/g, "*"),
+        reason: result.reason ?? "unknown",
+      });
+      throw new Error(result.reason || "Could not send the WhatsApp OTP.");
+    }
+    console.info("[grizzly-otp] Interakt accepted OTP send", {
+      phone: phone.replace(/\d(?=\d{4})/g, "*"),
+      providerMessageId: result.providerMessageId ?? null,
+      note: "Check Interakt inbox / WhatsApp for Meta delivery (Error 100 = delivery-side)",
+    });
+    return "whatsapp";
+  }
+
+  const text = `Your Grizzly Pizzeria code expires in 5 minutes. Don't share it.`;
+  const digits = phone.replace(/\D/g, "");
+  const to = digits.length === 10 ? `91${digits}` : digits;
 
   const twilioSid = process.env["TWILIO_ACCOUNT_SID"]?.trim();
   const twilioToken = process.env["TWILIO_AUTH_TOKEN"]?.trim();
@@ -25,12 +50,11 @@ export async function sendWhatsAppOtp(phone: string, code: string): Promise<What
       body: new URLSearchParams({
         From: from,
         To: `whatsapp:+${to}`,
-        Body: text,
+        Body: `${text} Your code is ready in WhatsApp.`,
       }),
     });
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(body.slice(0, 180) || "WhatsApp send failed.");
+      throw new Error("WhatsApp send failed.");
     }
     return "whatsapp";
   }
@@ -59,20 +83,10 @@ export async function sendWhatsAppOtp(phone: string, code: string): Promise<What
       }),
     });
     if (templated.ok) return "whatsapp";
-    const plain = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to,
-        type: "text",
-        text: { body: text, preview_url: false },
-      }),
-    });
-    if (!plain.ok) throw new Error("Could not send the WhatsApp OTP.");
-    return "whatsapp";
+    throw new Error("Could not send the WhatsApp OTP.");
   }
 
-  console.info(`[grizzly-otp] WhatsApp API not configured. Code for ${phone}: ${code}`);
+  // Local/dev without a provider: accept the challenge but do not print the code.
+  console.info(`[grizzly-otp] WhatsApp provider not configured for ${phone.replace(/\d(?=\d{4})/g, "*")}`);
   return "dev";
 }

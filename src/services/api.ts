@@ -11,6 +11,9 @@ import {
   customerLogoutFn,
   customerPasswordLoginFn,
   requestCustomerOtpFn,
+  requestPhoneLoginOtpFn,
+  sendMarketingCampaignFn,
+  setMarketingConsentFn,
   verifyCustomerOtpFn,
   deleteCouponFn,
   deleteMenuItemFn,
@@ -124,6 +127,10 @@ export async function requestCustomerOtp(input: {
   return requestCustomerOtpFn({ data: input });
 }
 
+export async function requestPhoneLoginOtp(phone: string) {
+  return requestPhoneLoginOtpFn({ data: { phone } });
+}
+
 export async function verifyCustomerOtp(phone: string, code: string, newPassword?: string | undefined) {
   const user = await verifyCustomerOtpFn({
     data: { phone, code, ...(newPassword ? { newPassword } : {}) },
@@ -131,6 +138,20 @@ export async function verifyCustomerOtp(phone: string, code: string, newPassword
   setSession((s) => ({ ...s, phone: user.phone, customerName: user.name }));
   await bump();
   return user;
+}
+
+export async function setWhatsAppMarketingConsent(consented: boolean, source = "account") {
+  const result = await setMarketingConsentFn({ data: { consented, source } });
+  await bump();
+  return result;
+}
+
+export async function sendWhatsAppMarketingCampaign(input: {
+  phone: string;
+  campaignKey: string;
+  bodyValues?: string[];
+}) {
+  return sendMarketingCampaignFn({ data: input });
 }
 
 export function signOutCustomer() {
