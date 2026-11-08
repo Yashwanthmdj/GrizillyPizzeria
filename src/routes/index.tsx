@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import heroPizza from "@/assets/hero-pizza.webp";
 import { Button } from "@/components/ui/button";
 import { BearMark, EASE, Reveal } from "@/components/brand";
+import { AnnouncementRail } from "@/components/shop/AnnouncementRail";
 import { WelcomeCrisp } from "@/components/shop/WelcomeCrisp";
 import { ShopLayout, seo } from "@/components/shop/ShopLayout";
 import { MenuCard } from "@/components/shop/MenuCard";
@@ -101,6 +102,7 @@ function Home() {
   return (
     <ShopLayout>
       <WelcomeCrisp />
+      <AnnouncementRail />
       <ReadyNotice orders={readyOrders} />
       <section
         ref={ref}

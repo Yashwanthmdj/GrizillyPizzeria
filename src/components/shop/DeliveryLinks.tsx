@@ -4,51 +4,50 @@ import { cn } from "@/lib/utils";
 export function DeliveryLinks({
   className,
   tone = "light",
+  /** Always render both brand buttons; inactive until admin sets a URL. */
+  alwaysShow = false,
 }: {
   className?: string;
   tone?: "light" | "dark";
+  alwaysShow?: boolean;
 }) {
   const { zomatoUrl, swiggyUrl } = useDB().settings;
   const zomato = zomatoUrl?.trim();
   const swiggy = swiggyUrl?.trim();
-  if (!zomato && !swiggy) return null;
+  if (!alwaysShow && !zomato && !swiggy) return null;
 
   const base =
     tone === "dark"
       ? "rounded-full px-4 py-2 text-sm font-bold transition"
       : "rounded-full px-4 py-2 text-sm font-bold shadow-warm transition";
 
+  const items = [
+    { label: "Order on Zomato", href: zomato, className: "bg-[#E23744] text-white hover:brightness-110" },
+    { label: "Order on Swiggy", href: swiggy, className: "bg-[#FC8019] text-white hover:brightness-110" },
+  ].filter((item) => alwaysShow || item.href);
+
   return (
     <div className={cn("flex flex-wrap gap-2", className)}>
-      {zomato && (
-        <a
-          href={zomato}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(
-            base,
-            tone === "dark"
-              ? "bg-[#E23744] text-white hover:brightness-110"
-              : "bg-[#E23744] text-white hover:brightness-110",
-          )}
-        >
-          Order on Zomato
-        </a>
-      )}
-      {swiggy && (
-        <a
-          href={swiggy}
-          target="_blank"
-          rel="noreferrer"
-          className={cn(
-            base,
-            tone === "dark"
-              ? "bg-[#FC8019] text-white hover:brightness-110"
-              : "bg-[#FC8019] text-white hover:brightness-110",
-          )}
-        >
-          Order on Swiggy
-        </a>
+      {items.map((item) =>
+        item.href ? (
+          <a
+            key={item.label}
+            href={item.href}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(base, item.className)}
+          >
+            {item.label}
+          </a>
+        ) : (
+          <span
+            key={item.label}
+            title="Link coming soon"
+            className={cn(base, item.className, "cursor-default opacity-55")}
+          >
+            {item.label}
+          </span>
+        ),
       )}
     </div>
   );
