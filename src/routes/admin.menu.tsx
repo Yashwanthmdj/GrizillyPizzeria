@@ -12,7 +12,7 @@ import { CATEGORIES, type Category, type MenuItem } from "@/services/types";
 const schema = z.object({
   name: z.string().min(2),
   description: z.string().min(4),
-  category: z.enum(["Pizzas", "Sandwiches", "Garlic Bread", "Fries", "Dips"]),
+  category: z.enum(["Pizzas", "Folds", "Garlic Bread", "Fries", "Dips"]),
   price: z.number().positive(),
   badge: z.string().optional(),
 });

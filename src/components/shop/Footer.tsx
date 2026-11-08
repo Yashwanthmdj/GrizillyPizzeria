@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Instagram, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/brand";
+import { DeliveryLinks } from "@/components/shop/DeliveryLinks";
 import { useDB } from "@/services/store";
 
 const EAT = [
@@ -58,6 +59,7 @@ export function Footer() {
                 <MessageCircle className="size-5" />
               </a>
             </div>
+            <DeliveryLinks className="mt-4" tone="dark" />
           </div>
           <div>
             <h3 className="font-display text-base text-secondary sm:text-lg">Eat</h3>

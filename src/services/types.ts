@@ -1,6 +1,6 @@
 export type ID = string;
-export type Category = "Pizzas" | "Sandwiches" | "Garlic Bread" | "Fries" | "Dips";
-export const CATEGORIES: Category[] = ["Pizzas", "Sandwiches", "Garlic Bread", "Fries", "Dips"];
+export type Category = "Pizzas" | "Folds" | "Garlic Bread" | "Fries" | "Dips";
+export const CATEGORIES: Category[] = ["Pizzas", "Folds", "Garlic Bread", "Fries", "Dips"];
 export type SizeKey = "Regular" | "Small" | "Medium" | "Large";
 
 export interface Outlet {
@@ -179,6 +179,9 @@ export interface ShopSettings {
   email: string;
   refundText: string;
   cancellationText: string;
+  /** Public storefront links — leave empty to hide the buttons. */
+  zomatoUrl?: string | undefined;
+  swiggyUrl?: string | undefined;
 }
 
 export interface AuditEntry {

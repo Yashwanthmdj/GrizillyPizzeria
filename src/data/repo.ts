@@ -125,7 +125,7 @@ export async function ensureSeed() {
       await setMeta("seeded", "4");
     }
     const catalog = await meta("catalog");
-    if (catalog !== "board-v1-veg") {
+    if (catalog !== "board-v1-veg-pizza-photos-2026") {
       await exec("DELETE FROM menu_items");
       for (const m of MENU) {
         await exec("INSERT OR REPLACE INTO menu_items (id, data) VALUES (?, ?)", [
@@ -135,7 +135,7 @@ export async function ensureSeed() {
       }
       await exec("INSERT OR REPLACE INTO settings (id, data) VALUES ('shop', ?)", [JSON.stringify(DEFAULT_SETTINGS)]);
       await exec("INSERT OR REPLACE INTO loyalty (id, data) VALUES ('shop', ?)", [JSON.stringify(DEFAULT_LOYALTY)]);
-      await setMeta("catalog", "board-v1-veg");
+      await setMeta("catalog", "board-v1-veg-pizza-photos-2026");
     }
     await syncStaffPasswords();
   });
@@ -217,7 +217,10 @@ async function loadCoupons(): Promise<Coupon[]> {
 
 async function loadSettings(): Promise<ShopSettings> {
   const rs = await exec("SELECT data FROM settings WHERE id = 'shop'");
-  return parseJson(rs.rows[0] ? s(rs.rows[0], "data") : null, DEFAULT_SETTINGS);
+  return {
+    ...DEFAULT_SETTINGS,
+    ...parseJson(rs.rows[0] ? s(rs.rows[0], "data") : null, DEFAULT_SETTINGS),
+  };
 }
 
 async function loadLoyalty(): Promise<LoyaltyRule> {

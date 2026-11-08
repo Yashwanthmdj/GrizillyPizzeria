@@ -18,6 +18,8 @@ const schema = z.object({
   email: z.string().email(),
   refundText: z.string().min(12),
   cancellationText: z.string().min(12),
+  zomatoUrl: z.string().optional(),
+  swiggyUrl: z.string().optional(),
 });
 
 export const Route = createFileRoute("/admin/settings")({
@@ -45,13 +47,13 @@ function SettingsAdmin() {
           return;
         }
         setError("");
-        await updateSettings(parsed.data);
+        await updateSettings({ ...form, ...parsed.data });
         toast.success("Settings saved. Cart and checkout use them now.");
       }}
     >
       <h1 className="text-4xl">Settings</h1>
       <p className="text-sm text-muted-foreground">
-        Cart, checkout and the contact page read these values.
+        Cart, checkout, delivery buttons and the contact page read these values.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Num label="GST %" value={form.taxPercent} onChange={(taxPercent) => set({ taxPercent })} />
@@ -92,6 +94,24 @@ function SettingsAdmin() {
         <input
           value={form.email}
           onChange={(e) => set({ email: e.target.value })}
+          className={`${fieldCls} mt-1`}
+        />
+      </label>
+      <label className="block text-sm font-semibold">
+        Zomato store URL
+        <input
+          value={form.zomatoUrl ?? ""}
+          onChange={(e) => set({ zomatoUrl: e.target.value })}
+          placeholder="https://www.zomato.com/..."
+          className={`${fieldCls} mt-1`}
+        />
+      </label>
+      <label className="block text-sm font-semibold">
+        Swiggy store URL
+        <input
+          value={form.swiggyUrl ?? ""}
+          onChange={(e) => set({ swiggyUrl: e.target.value })}
+          placeholder="https://www.swiggy.com/..."
           className={`${fieldCls} mt-1`}
         />
       </label>

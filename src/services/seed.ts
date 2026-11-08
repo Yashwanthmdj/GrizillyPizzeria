@@ -1,5 +1,9 @@
-import margherita from "@/assets/menu-margherita.jpg";
-import veggie from "@/assets/menu-veggie.jpg";
+import margherita from "@/assets/menu-margherita.webp";
+import angryMushroom from "@/assets/menu-angry-mushroom.webp";
+import pestoOlive from "@/assets/menu-pesto-olive.webp";
+import devil from "@/assets/menu-devil.webp";
+import biancaAlTruffle from "@/assets/menu-bianca-al-truffle.webp";
+import farmhouse from "@/assets/menu-farmhouse.webp";
 import sides from "@/assets/menu-sides.jpg";
 import drinks from "@/assets/menu-drinks.jpg";
 import combo from "@/assets/menu-combo.jpg";
@@ -66,7 +70,7 @@ const both = { o1: true, o2: true };
 function defaultPrep(category: MenuItem["category"]) {
   if (category === "Fries") return 6;
   if (category === "Pizzas") return 16;
-  if (category === "Sandwiches") return 8;
+  if (category === "Folds") return 8;
   if (category === "Garlic Bread") return 8;
   if (category === "Dips") return 1;
   return 8;
@@ -106,7 +110,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 289,
-    image: veggie,
+    image: angryMushroom,
     badge: "Spicy",
     description: "Tomato sauce, garlic-marinated mushroom and jalapeno.",
   }),
@@ -116,7 +120,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 299,
-    image: veggie,
+    image: pestoOlive,
     description: "Pesto sauce, olives, peppers and sun-dried tomato.",
   }),
   item({
@@ -125,7 +129,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 299,
-    image: veggie,
+    image: devil,
     badge: "Spicy",
     description: "Paneer, pickled onion, paprika and jalapeno.",
   }),
@@ -135,7 +139,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 349,
-    image: margherita,
+    image: biancaAlTruffle,
     description: "White sauce, caramelized onion and mushroom.",
   }),
   item({
@@ -144,13 +148,13 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 299,
-    image: veggie,
+    image: farmhouse,
     description: "Pepper, pickled onion, corn, jalapeno, olives and mushroom.",
   }),
   item({
     id: "sw1",
-    name: "Classic Caprese Sandwich",
-    category: "Sandwiches",
+    name: "Classic Caprese Fold",
+    category: "Folds",
     veg: true,
     price: 259,
     image: sides,
@@ -158,8 +162,8 @@ export const MENU: MenuItem[] = [
   }),
   item({
     id: "sw2",
-    name: "Funghi Krmusi Sandwich",
-    category: "Sandwiches",
+    name: "Funghi Krmusi Fold",
+    category: "Folds",
     veg: true,
     price: 199,
     image: sides,
@@ -167,8 +171,8 @@ export const MENU: MenuItem[] = [
   }),
   item({
     id: "sw3",
-    name: "Paneer Tikka Sandwich",
-    category: "Sandwiches",
+    name: "Paneer Tikka Fold",
+    category: "Folds",
     veg: true,
     price: 249,
     image: sides,
@@ -179,7 +183,7 @@ export const MENU: MenuItem[] = [
     name: "Classic Garlic Bread",
     category: "Garlic Bread",
     veg: true,
-    price: 129,
+    price: 169,
     image: sides,
     description: "Garlic butter.",
   }),
@@ -188,7 +192,7 @@ export const MENU: MenuItem[] = [
     name: "Grizzly Chef Special",
     category: "Garlic Bread",
     veg: true,
-    price: 179,
+    price: 219,
     image: sides,
     badge: "Bestseller",
     description: "Garlic butter, cheese and garlic mayo.",
@@ -198,17 +202,17 @@ export const MENU: MenuItem[] = [
     name: "Jalapeno & Tomato",
     category: "Garlic Bread",
     veg: true,
-    price: 159,
+    price: 219,
     image: sides,
     badge: "Spicy",
     description: "Jalapeno, garlic butter and cheese.",
   }),
   item({
     id: "g4",
-    name: "Angry Mushroom Bread",
+    name: "Angry Mushroom",
     category: "Garlic Bread",
     veg: true,
-    price: 169,
+    price: 229,
     image: sides,
     description: "Marinated mushroom and cheese.",
   }),
@@ -217,9 +221,18 @@ export const MENU: MenuItem[] = [
     name: "Pesto Garlic Bread",
     category: "Garlic Bread",
     veg: true,
-    price: 189,
+    price: 259,
     image: sides,
     description: "Pesto sauce, garlic butter, cheese and sun-dried tomato.",
+  }),
+  item({
+    id: "f0",
+    name: "Salted Fries",
+    category: "Fries",
+    veg: true,
+    price: 99,
+    image: combo,
+    description: "Classic salted crispy fries. Small / Medium / Large.",
   }),
   item({
     id: "f1",
@@ -288,6 +301,15 @@ export const MENU: MenuItem[] = [
     image: drinks,
     description: "Classic tomato.",
   }),
+  item({
+    id: "dip4",
+    name: "Ranch Dip",
+    category: "Dips",
+    veg: true,
+    price: 35,
+    image: drinks,
+    description: "Creamy ranch.",
+  }),
 ];
 
 export const DEFAULT_SETTINGS: ShopSettings = {
@@ -302,6 +324,8 @@ export const DEFAULT_SETTINGS: ShopSettings = {
     "If the kitchen cannot fulfil an accepted order, we refund online payments to the original method within 3–5 working days. Counter payments are not charged until pickup.",
   cancellationText:
     "Cancel from My orders before the kitchen accepts. After accept, call the outlet — food already in the oven cannot be cancelled.",
+  zomatoUrl: "",
+  swiggyUrl: "",
 };
 
 export function defaultCoupons(now = Date.now()): Coupon[] {
