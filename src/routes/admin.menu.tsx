@@ -90,7 +90,7 @@ function MenuAdmin() {
             key={item.id}
             className="flex flex-wrap items-center gap-3 rounded-2xl bg-card px-4 py-3 shadow-warm"
           >
-            <img src={item.image} alt="" className="size-12 rounded-xl object-cover" />
+            <img src={item.image} alt="" className="size-12 rounded-xl bg-white object-contain" />
             <div className="min-w-0 flex-1">
               <p className="font-semibold">{item.name}</p>
               <p className="text-xs text-muted-foreground">

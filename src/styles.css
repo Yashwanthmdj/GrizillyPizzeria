@@ -208,6 +208,14 @@
 @utility marquee {
   animation: marquee 28s linear infinite;
 }
+@utility ticker {
+  animation: marquee 22s linear infinite;
+}
+@utility ticker-pause {
+  &:hover {
+    animation-play-state: paused;
+  }
+}
 @utility ticket {
   -webkit-mask: radial-gradient(circle 14px at 0 62%, transparent 98%, #000) left,
     radial-gradient(circle 14px at 100% 62%, transparent 98%, #000) right;

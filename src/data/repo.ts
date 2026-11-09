@@ -125,7 +125,7 @@ export async function ensureSeed() {
       await setMeta("seeded", "4");
     }
     const catalog = await meta("catalog");
-    if (catalog !== "board-v1-veg-pizza-photos-2026") {
+    if (catalog !== "board-v5-dip-photos-2026") {
       await exec("DELETE FROM menu_items");
       for (const m of MENU) {
         await exec("INSERT OR REPLACE INTO menu_items (id, data) VALUES (?, ?)", [
@@ -135,7 +135,7 @@ export async function ensureSeed() {
       }
       await exec("INSERT OR REPLACE INTO settings (id, data) VALUES ('shop', ?)", [JSON.stringify(DEFAULT_SETTINGS)]);
       await exec("INSERT OR REPLACE INTO loyalty (id, data) VALUES ('shop', ?)", [JSON.stringify(DEFAULT_LOYALTY)]);
-      await setMeta("catalog", "board-v1-veg-pizza-photos-2026");
+      await setMeta("catalog", "board-v5-dip-photos-2026");
     }
     await syncStaffPasswords();
   });

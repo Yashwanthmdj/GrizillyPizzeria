@@ -11,7 +11,7 @@ import { useDB } from "@/services/store";
 import { deleteMenuItem, upsertMenuItem } from "@/services/api";
 import { itemPrice } from "@/services/pricing";
 import { CATEGORIES, type MenuItem } from "@/services/types";
-import comboImg from "@/assets/menu-combo.jpg";
+import { menuPhotos } from "@/services/menu-photos";
 
 export const Route = createFileRoute("/kitchen/menu")({ component: KMenu });
 
@@ -62,7 +62,7 @@ function KMenu() {
               category: "Pizzas",
               veg: true,
               price: 299,
-              image: comboImg,
+              image: menuPhotos.margherita,
               availability: { o1: true, o2: true },
               priceOverride: {},
               sizes: undefined,

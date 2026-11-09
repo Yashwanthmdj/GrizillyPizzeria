@@ -1,12 +1,4 @@
-import margherita from "@/assets/menu-margherita.webp";
-import angryMushroom from "@/assets/menu-angry-mushroom.webp";
-import pestoOlive from "@/assets/menu-pesto-olive.webp";
-import devil from "@/assets/menu-devil.webp";
-import biancaAlTruffle from "@/assets/menu-bianca-al-truffle.webp";
-import farmhouse from "@/assets/menu-farmhouse.webp";
-import sides from "@/assets/menu-sides.jpg";
-import drinks from "@/assets/menu-drinks.jpg";
-import combo from "@/assets/menu-combo.jpg";
+import { menuPhotos as photo } from "./menu-photos";
 import type {
   Coupon,
   DB,
@@ -100,7 +92,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 259,
-    image: margherita,
+    image: photo.margherita,
     badge: "Bestseller",
     description: "Tomato sauce, mozzarella, basil and olive oil.",
   }),
@@ -110,7 +102,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 289,
-    image: angryMushroom,
+    image: photo.angryMushroomPizza,
     badge: "Spicy",
     description: "Tomato sauce, garlic-marinated mushroom and jalapeno.",
   }),
@@ -120,7 +112,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 299,
-    image: pestoOlive,
+    image: photo.pestoPizza,
     description: "Pesto sauce, olives, peppers and sun-dried tomato.",
   }),
   item({
@@ -129,7 +121,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 299,
-    image: devil,
+    image: photo.devil,
     badge: "Spicy",
     description: "Paneer, pickled onion, paprika and jalapeno.",
   }),
@@ -139,7 +131,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 349,
-    image: biancaAlTruffle,
+    image: photo.bianca,
     description: "White sauce, caramelized onion and mushroom.",
   }),
   item({
@@ -148,7 +140,7 @@ export const MENU: MenuItem[] = [
     category: "Pizzas",
     veg: true,
     price: 299,
-    image: farmhouse,
+    image: photo.farmhouse,
     description: "Pepper, pickled onion, corn, jalapeno, olives and mushroom.",
   }),
   item({
@@ -157,7 +149,7 @@ export const MENU: MenuItem[] = [
     category: "Folds",
     veg: true,
     price: 259,
-    image: sides,
+    image: photo.capreseFold,
     description: "Fresh mozzarella cheese, lettuce, tomato and pesto sauce.",
   }),
   item({
@@ -166,7 +158,7 @@ export const MENU: MenuItem[] = [
     category: "Folds",
     veg: true,
     price: 199,
-    image: sides,
+    image: photo.funghiFold,
     description: "Marinated mushroom, jalapeno, lettuce and garlic mayo.",
   }),
   item({
@@ -175,7 +167,7 @@ export const MENU: MenuItem[] = [
     category: "Folds",
     veg: true,
     price: 249,
-    image: sides,
+    image: photo.paneerFold,
     description: "Pickled onion, green chutney, paneer, tomato and lettuce.",
   }),
   item({
@@ -184,7 +176,7 @@ export const MENU: MenuItem[] = [
     category: "Garlic Bread",
     veg: true,
     price: 169,
-    image: sides,
+    image: photo.classicBread,
     description: "Garlic butter.",
   }),
   item({
@@ -193,7 +185,7 @@ export const MENU: MenuItem[] = [
     category: "Garlic Bread",
     veg: true,
     price: 219,
-    image: sides,
+    image: photo.chefBread,
     badge: "Bestseller",
     description: "Garlic butter, cheese and garlic mayo.",
   }),
@@ -203,7 +195,7 @@ export const MENU: MenuItem[] = [
     category: "Garlic Bread",
     veg: true,
     price: 219,
-    image: sides,
+    image: photo.jalapenoBread,
     badge: "Spicy",
     description: "Jalapeno, garlic butter and cheese.",
   }),
@@ -213,7 +205,7 @@ export const MENU: MenuItem[] = [
     category: "Garlic Bread",
     veg: true,
     price: 229,
-    image: sides,
+    image: photo.mushroomBread,
     description: "Marinated mushroom and cheese.",
   }),
   item({
@@ -222,7 +214,7 @@ export const MENU: MenuItem[] = [
     category: "Garlic Bread",
     veg: true,
     price: 259,
-    image: sides,
+    image: photo.pestoBread,
     description: "Pesto sauce, garlic butter, cheese and sun-dried tomato.",
   }),
   item({
@@ -231,7 +223,7 @@ export const MENU: MenuItem[] = [
     category: "Fries",
     veg: true,
     price: 99,
-    image: combo,
+    image: photo.saltedFries,
     description: "Classic salted crispy fries. Small / Medium / Large.",
   }),
   item({
@@ -240,7 +232,7 @@ export const MENU: MenuItem[] = [
     category: "Fries",
     veg: true,
     price: 99,
-    image: combo,
+    image: photo.chipotleFries,
     badge: "Bestseller",
     description: "Crispy fries, spicy chipotle dust. Small / Medium / Large.",
   }),
@@ -250,9 +242,19 @@ export const MENU: MenuItem[] = [
     category: "Fries",
     veg: true,
     price: 99,
-    image: combo,
+    image: photo.chilliCheeseFries,
     badge: "Bestseller",
     description: "Crispy fries, chilli cheese. Small / Medium / Large.",
+  }),
+  item({
+    id: "f5",
+    name: "Peri Peri Fries",
+    category: "Fries",
+    veg: true,
+    price: 99,
+    image: photo.periPeriFries,
+    badge: "Spicy",
+    description: "Crispy fries, peri peri seasoning. Small / Medium / Large.",
   }),
   item({
     id: "f3",
@@ -260,7 +262,7 @@ export const MENU: MenuItem[] = [
     category: "Fries",
     veg: true,
     price: 99,
-    image: combo,
+    image: photo.cheesePeriPeriFries,
     badge: "Bestseller",
     description: "Crispy fries, cheese peri peri. Small / Medium / Large.",
   }),
@@ -270,7 +272,7 @@ export const MENU: MenuItem[] = [
     category: "Fries",
     veg: true,
     price: 99,
-    image: combo,
+    image: photo.koreanFries,
     badge: "Bestseller",
     description: "Crispy fries, Korean BBQ. Small / Medium / Large.",
   }),
@@ -280,7 +282,7 @@ export const MENU: MenuItem[] = [
     category: "Dips",
     veg: true,
     price: 40,
-    image: drinks,
+    image: photo.pestoDip,
     description: "House pesto.",
   }),
   item({
@@ -289,7 +291,7 @@ export const MENU: MenuItem[] = [
     category: "Dips",
     veg: true,
     price: 39,
-    image: drinks,
+    image: photo.honeyChilliDip,
     description: "Sweet heat.",
   }),
   item({
@@ -298,7 +300,7 @@ export const MENU: MenuItem[] = [
     category: "Dips",
     veg: true,
     price: 35,
-    image: drinks,
+    image: photo.marinaraDip,
     description: "Classic tomato.",
   }),
   item({
@@ -307,7 +309,7 @@ export const MENU: MenuItem[] = [
     category: "Dips",
     veg: true,
     price: 35,
-    image: drinks,
+    image: photo.ranchDip,
     description: "Creamy ranch.",
   }),
 ];

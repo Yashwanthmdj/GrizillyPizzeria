@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LayoutGroup, motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ShopLayout, seo } from "@/components/shop/ShopLayout";
 import { MenuCard } from "@/components/shop/MenuCard";
@@ -100,27 +100,30 @@ function MenuPage() {
               ))}
             </div>
           </LayoutGroup>
-          <div className="flex flex-wrap items-center gap-2 pb-3">
-            <label className="relative min-w-0 flex-1 basis-full sm:basis-auto">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col gap-2 pb-3 min-[520px]:flex-row min-[520px]:items-center">
+            <label className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <span className="sr-only">Search menu</span>
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Search pizzas, sides…"
-                className="h-10 w-full rounded-full border-2 border-input bg-card pl-9 pr-3 text-sm outline-none focus:border-primary"
+                className="h-11 w-full rounded-full border-2 border-input bg-card pl-10 pr-4 text-sm outline-none focus:border-primary"
               />
             </label>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as Sort)}
-              aria-label="Sort"
-              className="h-10 min-w-0 flex-1 rounded-full border-2 border-input bg-card px-3 text-sm font-semibold sm:flex-none"
-            >
-              <option value="popular">Popular</option>
-              <option value="low">Price: low to high</option>
-              <option value="high">Price: high to low</option>
-            </select>
+            <div className="relative w-full shrink-0 min-[520px]:w-52">
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as Sort)}
+                aria-label="Sort"
+                className="h-11 w-full appearance-none rounded-full border-2 border-input bg-card pl-4 pr-10 text-sm font-semibold outline-none focus:border-primary"
+              >
+                <option value="popular">Popular</option>
+                <option value="low">Price: low to high</option>
+                <option value="high">Price: high to low</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-cocoa" />
+            </div>
           </div>
         </div>
       </div>

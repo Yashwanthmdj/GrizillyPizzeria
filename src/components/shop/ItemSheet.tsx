@@ -41,8 +41,8 @@ export function ItemSheet() {
             className="relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)] shadow-lift sm:max-w-lg sm:rounded-3xl"
             transition={{ duration: 0.45, ease: EASE }}
           >
-            <div ref={imgRef} className="relative h-52 shrink-0 sm:h-60">
-              <Img src={item.image} alt={item.name} className="size-full" />
+            <div ref={imgRef} className="relative aspect-[4/3] max-h-[42dvh] w-full shrink-0 bg-white sm:aspect-[5/4]">
+              <Img src={item.image} alt={item.name} className="size-full p-3 sm:p-5" />
               <button
                 onClick={() => openItem(null)}
                 className="absolute right-3 top-3 grid size-10 place-items-center rounded-full bg-card/90 shadow-warm"

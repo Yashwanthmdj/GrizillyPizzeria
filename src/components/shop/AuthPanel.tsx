@@ -8,7 +8,7 @@ import {
   requestPhoneLoginOtp,
   verifyCustomerOtp,
 } from "@/services/api";
-import { CUSTOMER_PASSWORD_HINT, customerPasswordIssue } from "@/lib/customer-auth";
+import { customerPasswordIssue } from "@/lib/customer-auth";
 
 type Mode = "login" | "register" | "forgot" | "whatsapp";
 
@@ -174,7 +174,7 @@ export function AuthPanel({
           )}
           {passwordError && (
             <p className="text-xs font-semibold text-primary" role="alert">
-              {CUSTOMER_PASSWORD_HINT}
+              {passwordError}
             </p>
           )}
         </>
@@ -201,7 +201,7 @@ export function AuthPanel({
               />
               {passwordError && (
                 <p className="text-xs font-semibold text-primary" role="alert">
-                  {CUSTOMER_PASSWORD_HINT}
+                  {passwordError}
                 </p>
               )}
             </>

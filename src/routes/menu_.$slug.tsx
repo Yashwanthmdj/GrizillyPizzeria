@@ -76,7 +76,11 @@ function ProductPage() {
         )}
         {status === "ready" && live && (
           <div className="grid gap-6 md:grid-cols-2">
-            <Img src={live.image} alt={live.name} className="aspect-square w-full rounded-3xl" />
+            <Img
+              src={live.image}
+              alt={live.name}
+              className="aspect-[4/3] w-full rounded-3xl bg-white p-3 sm:aspect-square sm:p-6"
+            />
             <div>
               <p className="text-sm font-semibold text-muted-foreground">
                 {live.category} · 100% vegetarian

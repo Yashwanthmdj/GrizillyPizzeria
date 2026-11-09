@@ -17,7 +17,7 @@ export function AnnouncementRail() {
   const db = useDB();
   const reduce = useReducedMotion();
   const rootRef = useRef<HTMLElement>(null);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [slide, setSlide] = useState(0);
 
   const offers = useMemo(() => {
@@ -81,7 +81,7 @@ export function AnnouncementRail() {
             role="dialog"
             aria-modal="false"
             aria-label="Coupons and delivery offers"
-            className="pointer-events-auto w-[min(16rem,calc(100vw-1.75rem))] overflow-hidden rounded-2xl border-2 border-cocoa bg-cream text-cocoa shadow-lift"
+            className="pointer-events-auto w-[min(18.5rem,calc(100vw-1.75rem))] overflow-hidden rounded-2xl border border-cocoa/10 bg-cream text-cocoa shadow-lift"
             initial={{ opacity: 0, y: 12, scale: 0.92 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.94 }}
@@ -152,7 +152,7 @@ export function AnnouncementRail() {
                 </p>
                 <DeliveryLinks
                   alwaysShow
-                  className="gap-1.5 [&_a]:rounded-xl [&_a]:px-3 [&_a]:py-1.5 [&_a]:text-xs [&_span]:rounded-xl [&_span]:px-3 [&_span]:py-1.5 [&_span]:text-xs"
+                  className="flex-col [&_a]:w-full [&_a]:rounded-xl [&_a]:px-3 [&_a]:py-2 [&_a]:text-xs [&_span]:w-full [&_span]:rounded-xl [&_span]:px-3 [&_span]:py-2 [&_span]:text-xs"
                 />
               </div>
             </div>

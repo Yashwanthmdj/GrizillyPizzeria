@@ -1,5 +1,6 @@
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { useEffect } from "react";
+import { DeliveryMarks } from "@/components/shop/delivery-marks";
 import { cn } from "@/lib/utils";
 
 const LOGO = "/brand/logo.png";
@@ -59,19 +60,19 @@ export function LoadingScreen({
     >
       <motion.span
         aria-hidden
-        className="absolute size-56 rounded-full bg-secondary/25 blur-2xl sm:size-72"
+        className="absolute size-72 rounded-full bg-secondary/30 blur-3xl sm:size-96"
         initial={{ scale: 0.6, opacity: 0 }}
-        animate={reduce ? { scale: 1, opacity: 0.7 } : { scale: [0.7, 1.15, 0.95], opacity: [0, 0.85, 0.55] }}
+        animate={reduce ? { scale: 1, opacity: 0.7 } : { scale: [0.75, 1.12, 0.96], opacity: [0, 0.9, 0.6] }}
         transition={reduce ? { duration: 0.4 } : { duration: 2.2, ease: EASE, repeat: Infinity, repeatType: "mirror" }}
       />
       <motion.span
         aria-hidden
-        className="absolute size-36 rounded-full border border-secondary/50 sm:size-48"
-        initial={{ scale: 0.4, opacity: 0 }}
-        animate={reduce ? { scale: 1, opacity: 0.4 } : { scale: [0.55, 1.35], opacity: [0.55, 0] }}
+        className="absolute size-52 rounded-full border border-secondary/45 sm:size-64"
+        initial={{ scale: 0.45, opacity: 0 }}
+        animate={reduce ? { scale: 1, opacity: 0.4 } : { scale: [0.6, 1.28], opacity: [0.6, 0] }}
         transition={reduce ? { duration: 0.4 } : { duration: 1.8, ease: EASE, repeat: Infinity }}
       />
-      <div className="relative flex max-h-full w-full max-w-sm flex-col items-center gap-5 px-6 sm:gap-7">
+      <div className="relative flex max-h-full w-full max-w-[18.5rem] flex-col items-center gap-6 px-6 sm:max-w-sm sm:gap-7">
         <motion.div
           initial={{ opacity: 0, scale: 0.72, y: 28 }}
           animate={
@@ -93,29 +94,37 @@ export function LoadingScreen({
                 : { duration: 1.8, ease: EASE, repeat: Infinity, delay: 1.05 }
             }
           >
-            <BearMark className="h-28 w-auto max-h-[26dvh] drop-shadow-xl sm:h-44 sm:max-h-none" />
+            <BearMark className="h-44 w-auto max-h-[30dvh] drop-shadow-xl sm:h-52 sm:max-h-[34dvh]" />
           </motion.div>
         </motion.div>
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: reduce ? 0.05 : 0.28, duration: 0.5, ease: EASE }}
-          className="flex flex-col items-center gap-3"
+          className="flex w-full flex-col items-center gap-3.5"
         >
-          <Logo className="h-10 sm:h-14" />
-          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary sm:text-xs sm:tracking-[0.28em]">
+          <Logo className="h-14 sm:h-16" />
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.22em] text-secondary sm:text-sm sm:tracking-[0.28em]">
             100% pure veg
           </p>
         </motion.div>
         {intro && (
-          <div className="h-1.5 w-full max-w-44 overflow-hidden rounded-full bg-primary-deep/50">
-            <motion.div
-              className="h-full rounded-full bg-secondary"
-              initial={{ width: "0%" }}
-              animate={{ width: "100%" }}
-              transition={{ duration: INTRO_MS / 1000, ease: "linear" }}
-            />
-          </div>
+          <>
+            <div className="h-2 w-full max-w-56 overflow-hidden rounded-full bg-primary-deep/45">
+              <motion.div
+                className="h-full rounded-full bg-secondary"
+                initial={{ width: "0%" }}
+                animate={{ width: "100%" }}
+                transition={{ duration: INTRO_MS / 1000, ease: "linear" }}
+              />
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">
+                Also open on
+              </p>
+              <DeliveryMarks />
+            </div>
+          </>
         )}
       </div>
     </motion.div>
@@ -169,7 +178,7 @@ export function Img({ src, alt, className }: { src: string; alt: string; classNa
       decoding="async"
       width={640}
       height={477}
-      className={cn("bg-muted object-cover", className)}
+      className={cn("bg-white object-contain", className)}
       onError={(e) => {
         (e.currentTarget as HTMLImageElement).src = BEAR;
         (e.currentTarget as HTMLImageElement).classList.add("object-contain", "p-6");

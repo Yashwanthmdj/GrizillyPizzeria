@@ -1,5 +1,6 @@
 import { useDB } from "@/services/store";
 import { cn } from "@/lib/utils";
+import { SwiggyMark, ZomatoMark } from "./delivery-marks";
 
 export function DeliveryLinks({
   className,
@@ -18,12 +19,22 @@ export function DeliveryLinks({
 
   const base =
     tone === "dark"
-      ? "rounded-full px-4 py-2 text-sm font-bold transition"
-      : "rounded-full px-4 py-2 text-sm font-bold shadow-warm transition";
+      ? "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold transition"
+      : "inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-bold shadow-warm transition";
 
   const items = [
-    { label: "Order on Zomato", href: zomato, className: "bg-[#E23744] text-white hover:brightness-110" },
-    { label: "Order on Swiggy", href: swiggy, className: "bg-[#FC8019] text-white hover:brightness-110" },
+    {
+      label: "Zomato",
+      href: zomato,
+      className: "bg-[#E23744] text-white hover:brightness-110",
+      mark: <ZomatoMark />,
+    },
+    {
+      label: "Swiggy",
+      href: swiggy,
+      className: "bg-[#FC8019] text-white hover:brightness-110",
+      mark: <SwiggyMark />,
+    },
   ].filter((item) => alwaysShow || item.href);
 
   return (
@@ -37,15 +48,17 @@ export function DeliveryLinks({
             rel="noreferrer"
             className={cn(base, item.className)}
           >
-            {item.label}
+            {item.mark}
+            Order on {item.label}
           </a>
         ) : (
           <span
             key={item.label}
             title="Link coming soon"
-            className={cn(base, item.className, "cursor-default opacity-55")}
+            className={cn(base, item.className, "cursor-default opacity-80")}
           >
-            {item.label}
+            {item.mark}
+            Order on {item.label}
           </span>
         ),
       )}

@@ -40,7 +40,7 @@ export function MenuCard({
       <button
         type="button"
         onClick={() => openItem(item)}
-        className="relative block aspect-[4/3] overflow-hidden text-left"
+        className="relative block aspect-[4/3] overflow-hidden bg-white text-left sm:aspect-[5/4]"
         aria-label={`Customize ${item.name}`}
       >
         <Img

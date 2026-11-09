@@ -3,7 +3,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion
 import { ArrowRight, Gift, MapPin, QrCode, ShoppingBag, Smile } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import heroPizza from "@/assets/hero-pizza.webp";
+import { menuPhotos } from "@/services/menu-photos";
 import { Button } from "@/components/ui/button";
 import { BearMark, EASE, Reveal } from "@/components/brand";
 import { AnnouncementRail } from "@/components/shop/AnnouncementRail";
@@ -191,22 +191,21 @@ function Home() {
             style={{ y: y1 }}
             className="relative mx-auto size-[min(15.5rem,68vw)] sm:size-[min(20rem,52vw)] md:size-[min(28rem,_36vw,_calc(100svh-12rem))] lg:size-[min(30rem,_34vw,_calc(100svh-12rem))]"
           >
-            <div className="absolute inset-[8%] rounded-full bg-primary-deep/50 blur-2xl" />
-            <motion.img
-              src={heroPizza}
-              alt="Grizzly Pizzeria pizza"
-              width={720}
-              height={720}
-              fetchPriority="high"
-              className="relative size-full object-contain drop-shadow-2xl"
-              initial={{ scale: 0.7, opacity: 0 }}
-              animate={reduce ? { scale: 1, opacity: 1 } : { scale: 1, opacity: 1, rotate: 360 }}
-              transition={{
-                scale: { duration: 0.9, ease: EASE, delay: 1 },
-                opacity: { duration: 0.6, delay: 1 },
-                rotate: { duration: 60, repeat: Infinity, ease: "linear" },
-              }}
-            />
+            <motion.div
+              className="absolute inset-[4%] overflow-hidden rounded-full bg-white shadow-lift"
+              initial={{ scale: 0.92, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : 0.15 }}
+            >
+              <img
+                src={menuPhotos.margherita}
+                alt="Grizzly Pizzeria pizza"
+                width={900}
+                height={900}
+                fetchPriority="high"
+                className="size-full origin-center scale-[1.65] object-cover object-[46%_52%]"
+              />
+            </motion.div>
             {!reduce &&
               TOPPINGS.map((t, i) => (
                 <motion.span
@@ -280,14 +279,25 @@ function Home() {
                 { t: "No meat", d: "Not on the board. Not in the fryer. Not a maybe." },
                 { t: "No egg", d: "Dough, sauces and breads are made without egg." },
                 { t: "No compromise", d: "The full kitchen is vegetarian, every hour we are open." },
-              ].map((x) => (
-                <li
+              ].map((x, i) => (
+                <motion.li
                   key={x.t}
                   className="rounded-3xl border border-border bg-background px-5 py-6 shadow-warm"
+                  animate={reduce ? { y: 0 } : { y: [0, -8, 0] }}
+                  transition={
+                    reduce
+                      ? { duration: 0.2 }
+                      : {
+                          duration: 4.2 + i * 0.45,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                          delay: 0.2 + i * 0.35,
+                        }
+                  }
                 >
                   <p className="font-display text-lg text-primary">{x.t}</p>
                   <p className="mt-2 text-sm text-muted-foreground">{x.d}</p>
-                </li>
+                </motion.li>
               ))}
             </ul>
           </Reveal>
