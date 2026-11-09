@@ -28,6 +28,35 @@ export function unitPrice(
   return base + sizeExtra + tops;
 }
 
+/** Server-side prices. Client unit prices are ignored. */
+export function repriceLines(lines: CartLine[], menu: MenuItem[], outletId: string): CartLine[] {
+  if (!lines.length) throw new Error("Your box is empty.");
+  return lines.map((line) => {
+    const item = menu.find((entry) => entry.id === line.itemId);
+    if (!item) throw new Error("An item in your box is no longer on the menu.");
+    if (item.availability[outletId] === false) {
+      throw new Error(`${item.name} isn't available at this outlet.`);
+    }
+    const qty = Math.round(Number(line.qty));
+    if (!Number.isInteger(qty) || qty < 1 || qty > 20) throw new Error("Check the quantity on your order.");
+    const known = new Set((item.toppings ?? []).map((topping) => topping.name));
+    const toppings = (line.toppings ?? []).filter((name) => known.has(name));
+    const size = line.size && item.sizes?.some((option) => option.key === line.size) ? line.size : undefined;
+    const { size: _ignored, ...rest } = line;
+    return {
+      ...rest,
+      name: item.name,
+      image: item.image,
+      veg: true,
+      ...(size ? { size } : {}),
+      toppings,
+      unitPrice: unitPrice(item, outletId, size, toppings),
+      qty,
+      prepMinutes: line.prepMinutes || item.prepMinutes,
+    };
+  });
+}
+
 export function cartSubtotal(lines: CartLine[]) {
   return lines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
 }

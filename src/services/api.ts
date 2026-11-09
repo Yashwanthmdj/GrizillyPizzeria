@@ -20,7 +20,12 @@ import {
   getAnalyticsFn,
   getShopFn,
   loadProductFn,
+  markCounterCollectedFn,
+  paymentStatusFn,
   placeOrderFn,
+  resumeRazorpayCheckoutFn,
+  startRazorpayCheckoutFn,
+  verifyRazorpayPaymentFn,
   readyFn,
   saveCouponFn,
   saveMessageFn,
@@ -163,6 +168,114 @@ export async function updateProfile(input: { name: string; email: string }) {
   const next = await updateProfileFn({ data: input });
   setSession((s) => ({ ...s, customerName: next.name }));
   await bump();
+}
+
+function checkoutPayload(input: { name: string; notes?: string | undefined; scheduledFor?: number | undefined }) {
+  const s = getSession();
+  return {
+    name: input.name,
+    notes: input.notes,
+    scheduledFor: input.scheduledFor,
+    cart: s.cart,
+    outletId: s.outletId,
+    redeemStepId: s.redeemStepId,
+    couponCode: s.couponCode,
+    checkoutKey: checkoutKeyFor(s, input),
+  };
+}
+
+function checkoutKeyFor(
+  s: ReturnType<typeof getSession>,
+  input: { name: string; notes?: string | undefined },
+) {
+  const raw = JSON.stringify({
+    outletId: s.outletId,
+    coupon: s.couponCode,
+    redeem: s.redeemStepId,
+    name: input.name.trim(),
+    notes: input.notes?.trim() ?? "",
+    lines: s.cart.map((line) => ({
+      id: line.itemId,
+      size: line.size ?? "",
+      toppings: [...line.toppings].sort(),
+      qty: line.qty,
+      note: line.note ?? "",
+    })),
+  });
+  let hash = 2166136261;
+  for (let i = 0; i < raw.length; i++) {
+    hash ^= raw.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `chk_${(hash >>> 0).toString(36).padStart(7, "0")}_${raw.length.toString(36)}`;
+}
+
+function rememberOrder(orderId: string) {
+  setSession((ss) => ({
+    ...ss,
+    myOrders: ss.myOrders.includes(orderId) ? ss.myOrders : [orderId, ...ss.myOrders],
+  }));
+}
+
+function finishPaidCheckout(orderId: string) {
+  setSession((ss) => ({
+    ...ss,
+    cart: [],
+    redeemStepId: null,
+    couponCode: null,
+    myOrders: [orderId, ...ss.myOrders.filter((id) => id !== orderId)],
+  }));
+}
+
+export async function startRazorpayCheckout(input: {
+  name: string;
+  notes?: string | undefined;
+  scheduledFor?: number | undefined;
+}) {
+  const { notes, scheduledFor, ...rest } = checkoutPayload(input);
+  const session = await startRazorpayCheckoutFn({
+    data: {
+      ...rest,
+      ...(notes ? { notes } : {}),
+      ...(scheduledFor ? { scheduledFor } : {}),
+    },
+  });
+  rememberOrder(session.orderId);
+  if (session.alreadyPaid) finishPaidCheckout(session.orderId);
+  await bump();
+  return session;
+}
+
+export async function resumeRazorpayCheckout(orderId: string) {
+  const session = await resumeRazorpayCheckoutFn({ data: { orderId } });
+  if (session.alreadyPaid) finishPaidCheckout(session.orderId);
+  await bump();
+  return session;
+}
+
+export async function verifyRazorpayPayment(input: {
+  orderId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+}) {
+  const order = await verifyRazorpayPaymentFn({ data: input });
+  if (order.paid) finishPaidCheckout(order.id);
+  await bump();
+  return order;
+}
+
+export async function fetchPaymentStatus(orderId: string) {
+  const status = await paymentStatusFn({ data: { orderId } });
+  if (status.paid && status.payment === "online") finishPaidCheckout(status.orderId);
+  await bump();
+  return status;
+}
+
+export async function markCounterCollected(orderId: string) {
+  const order = await markCounterCollectedFn({ data: { orderId } });
+  await bump();
+  return order;
 }
 
 export async function placeOrder(input: {

@@ -74,6 +74,7 @@ export interface CartLine {
 export type OrderStatus = "Placed" | "Accepted" | "Preparing" | "Ready" | "Collected" | "Rejected";
 export const STATUS_FLOW: OrderStatus[] = ["Placed", "Accepted", "Preparing", "Ready", "Collected"];
 export type PaymentMethod = "online" | "counter";
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "CANCELLED" | "UNPAID";
 
 export interface Order {
   id: ID;
@@ -93,6 +94,12 @@ export interface Order {
   pointsEarned: number;
   payment: PaymentMethod;
   paid: boolean;
+  /** Separate from kitchen status. Online orders stay unpaid until Razorpay capture is verified. */
+  paymentStatus?: PaymentStatus | undefined;
+  razorpayOrderId?: string | undefined;
+  razorpayPaymentId?: string | undefined;
+  /** Coupon, points and the WhatsApp confirmation run once. */
+  benefitsApplied?: boolean | undefined;
   qrToken?: string | undefined;
   qrUsed?: boolean | undefined;
   waitMinutes?: number | undefined;

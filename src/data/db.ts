@@ -101,6 +101,34 @@ CREATE TABLE IF NOT EXISTS whatsapp_webhook_events (
   payload TEXT NOT NULL,
   received_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL,
+  checkout_key TEXT,
+  fingerprint TEXT,
+  razorpay_order_id TEXT,
+  razorpay_payment_id TEXT,
+  method TEXT NOT NULL,
+  status TEXT NOT NULL,
+  amount_paise INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  paid_at INTEGER,
+  error TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS payments_checkout_key ON payments(checkout_key) WHERE checkout_key IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS payments_rz_order ON payments(razorpay_order_id) WHERE razorpay_order_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS payments_rz_payment ON payments(razorpay_payment_id) WHERE razorpay_payment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS payments_order ON payments(order_id);
+CREATE TABLE IF NOT EXISTS razorpay_events (
+  id TEXT PRIMARY KEY,
+  event_id TEXT NOT NULL UNIQUE,
+  event_type TEXT NOT NULL,
+  razorpay_payment_id TEXT,
+  payload TEXT NOT NULL,
+  received_at INTEGER NOT NULL
+);
 `;
 
 export async function getClient() {

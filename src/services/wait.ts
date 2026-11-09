@@ -1,3 +1,4 @@
+import { countsTowardKitchen } from "./payment-status";
 import type { AttendanceRecord, KitchenWorker, Order, Outlet } from "./types";
 
 const COOKING: Order["status"][] = ["Placed", "Accepted", "Preparing"];
@@ -37,12 +38,16 @@ function byOldest(a: Order, b: Order) {
 
 /** Kitchen board: oldest first, including ready-for-pickup. */
 export function liveQueue(orders: Order[], outletId: string) {
-  return orders.filter((o) => o.outletId === outletId && BOARD.includes(o.status)).sort(byOldest);
+  return orders
+    .filter((o) => o.outletId === outletId && BOARD.includes(o.status) && countsTowardKitchen(o))
+    .sort(byOldest);
 }
 
 /** Tickets still occupying a cook slot (not handed over, not sitting ready). */
 export function cookQueue(orders: Order[], outletId: string) {
-  return orders.filter((o) => o.outletId === outletId && COOKING.includes(o.status)).sort(byOldest);
+  return orders
+    .filter((o) => o.outletId === outletId && COOKING.includes(o.status) && countsTowardKitchen(o))
+    .sort(byOldest);
 }
 
 /** 5 tickets already cooking → the next (6th) is 6 × minutesPerOrder. */

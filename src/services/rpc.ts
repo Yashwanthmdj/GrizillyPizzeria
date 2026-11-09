@@ -406,6 +406,64 @@ export const setItemPrepFn = createServerFn({ method: "POST" })
     return setItemPrep(await staffActor(), data.itemId, data.prepMinutes);
   });
 
+const checkoutCart = {
+  name: z.string().min(1).max(80),
+  notes: z.string().max(240).optional(),
+  scheduledFor: z.number().optional(),
+  cart: z.array(cartLineSchema).min(1),
+  outletId: z.string().nullable(),
+  redeemStepId: z.string().nullable(),
+  couponCode: z.string().nullable(),
+  checkoutKey: z.string().min(8).max(80),
+};
+
+export const startRazorpayCheckoutFn = createServerFn({ method: "POST" })
+  .validator(z.object(checkoutCart))
+  .handler(async ({ data }) => {
+    const { startOnlineCheckout } = await import("@/data/payments");
+    const { notes, scheduledFor, ...rest } = data;
+    return startOnlineCheckout(await customerActor(), {
+      ...rest,
+      ...(notes ? { notes } : {}),
+      ...(scheduledFor ? { scheduledFor } : {}),
+    });
+  });
+
+export const resumeRazorpayCheckoutFn = createServerFn({ method: "POST" })
+  .validator(z.object({ orderId: z.string() }))
+  .handler(async ({ data }) => {
+    const { resumeOnlineCheckout } = await import("@/data/payments");
+    return resumeOnlineCheckout(await customerActor(), data.orderId);
+  });
+
+export const verifyRazorpayPaymentFn = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      orderId: z.string(),
+      razorpayOrderId: z.string(),
+      razorpayPaymentId: z.string(),
+      razorpaySignature: z.string(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const { verifyOnlinePayment } = await import("@/data/payments");
+    return verifyOnlinePayment(await customerActor(), data);
+  });
+
+export const paymentStatusFn = createServerFn({ method: "GET" })
+  .validator(z.object({ orderId: z.string() }))
+  .handler(async ({ data }) => {
+    const { paymentStatus } = await import("@/data/payments");
+    return paymentStatus(await identities(), data.orderId);
+  });
+
+export const markCounterCollectedFn = createServerFn({ method: "POST" })
+  .validator(z.object({ orderId: z.string() }))
+  .handler(async ({ data }) => {
+    const { collectCounterPayment } = await import("@/data/payments");
+    return collectCounterPayment(await staffActor(), data.orderId);
+  });
+
 export const readyFn = createServerFn({ method: "GET" }).handler(async () => {
   const { snapshot } = await import("@/data/repo");
   const db = await snapshot(await identities());

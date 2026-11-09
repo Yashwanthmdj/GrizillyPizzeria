@@ -42,6 +42,9 @@ import { Route as KitchenStaffRouteImport } from './routes/kitchen.staff'
 import { Route as KitchenLoginRouteImport } from './routes/kitchen_.login'
 import { Route as MenuSlugRouteImport } from './routes/menu_.$slug'
 import { Route as OrderIdRouteImport } from './routes/order.$id'
+import { Route as ApiPaymentsOrderIdStatusRouteImport } from './routes/api/payments/$orderId/status'
+import { Route as ApiPaymentsRazorpayCreateOrderRouteImport } from './routes/api/payments/razorpay/create-order'
+import { Route as ApiPaymentsRazorpayVerifyRouteImport } from './routes/api/payments/razorpay/verify'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -208,6 +211,24 @@ const OrderIdRoute = OrderIdRouteImport.update({
   path: '/order/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPaymentsOrderIdStatusRoute =
+  ApiPaymentsOrderIdStatusRouteImport.update({
+    id: '/api/payments/$orderId/status',
+    path: '/api/payments/$orderId/status',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPaymentsRazorpayCreateOrderRoute =
+  ApiPaymentsRazorpayCreateOrderRouteImport.update({
+    id: '/api/payments/razorpay/create-order',
+    path: '/api/payments/razorpay/create-order',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPaymentsRazorpayVerifyRoute =
+  ApiPaymentsRazorpayVerifyRouteImport.update({
+    id: '/api/payments/razorpay/verify',
+    path: '/api/payments/razorpay/verify',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -243,6 +264,9 @@ export interface FileRoutesByFullPath {
   '/order/$id': typeof OrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/kitchen/': typeof KitchenIndexRoute
+  '/api/payments/$orderId/status': typeof ApiPaymentsOrderIdStatusRoute
+  '/api/payments/razorpay/create-order': typeof ApiPaymentsRazorpayCreateOrderRoute
+  '/api/payments/razorpay/verify': typeof ApiPaymentsRazorpayVerifyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -276,6 +300,9 @@ export interface FileRoutesByTo {
   '/order/$id': typeof OrderIdRoute
   '/admin': typeof AdminIndexRoute
   '/kitchen': typeof KitchenIndexRoute
+  '/api/payments/$orderId/status': typeof ApiPaymentsOrderIdStatusRoute
+  '/api/payments/razorpay/create-order': typeof ApiPaymentsRazorpayCreateOrderRoute
+  '/api/payments/razorpay/verify': typeof ApiPaymentsRazorpayVerifyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -312,6 +339,9 @@ export interface FileRoutesById {
   '/order/$id': typeof OrderIdRoute
   '/admin/': typeof AdminIndexRoute
   '/kitchen/': typeof KitchenIndexRoute
+  '/api/payments/$orderId/status': typeof ApiPaymentsOrderIdStatusRoute
+  '/api/payments/razorpay/create-order': typeof ApiPaymentsRazorpayCreateOrderRoute
+  '/api/payments/razorpay/verify': typeof ApiPaymentsRazorpayVerifyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -349,6 +379,9 @@ export interface FileRouteTypes {
     | '/order/$id'
     | '/admin/'
     | '/kitchen/'
+    | '/api/payments/$orderId/status'
+    | '/api/payments/razorpay/create-order'
+    | '/api/payments/razorpay/verify'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -382,6 +415,9 @@ export interface FileRouteTypes {
     | '/order/$id'
     | '/admin'
     | '/kitchen'
+    | '/api/payments/$orderId/status'
+    | '/api/payments/razorpay/create-order'
+    | '/api/payments/razorpay/verify'
   id:
     | '__root__'
     | '/'
@@ -417,6 +453,9 @@ export interface FileRouteTypes {
     | '/order/$id'
     | '/admin/'
     | '/kitchen/'
+    | '/api/payments/$orderId/status'
+    | '/api/payments/razorpay/create-order'
+    | '/api/payments/razorpay/verify'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -439,6 +478,9 @@ export interface RootRouteChildren {
   KitchenLoginRoute: typeof KitchenLoginRoute
   MenuSlugRoute: typeof MenuSlugRoute
   OrderIdRoute: typeof OrderIdRoute
+  ApiPaymentsOrderIdStatusRoute: typeof ApiPaymentsOrderIdStatusRoute
+  ApiPaymentsRazorpayCreateOrderRoute: typeof ApiPaymentsRazorpayCreateOrderRoute
+  ApiPaymentsRazorpayVerifyRoute: typeof ApiPaymentsRazorpayVerifyRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -674,6 +716,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrderIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/payments/$orderId/status': {
+      id: '/api/payments/$orderId/status'
+      path: '/api/payments/$orderId/status'
+      fullPath: '/api/payments/$orderId/status'
+      preLoaderRoute: typeof ApiPaymentsOrderIdStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/payments/razorpay/create-order': {
+      id: '/api/payments/razorpay/create-order'
+      path: '/api/payments/razorpay/create-order'
+      fullPath: '/api/payments/razorpay/create-order'
+      preLoaderRoute: typeof ApiPaymentsRazorpayCreateOrderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/payments/razorpay/verify': {
+      id: '/api/payments/razorpay/verify'
+      path: '/api/payments/razorpay/verify'
+      fullPath: '/api/payments/razorpay/verify'
+      preLoaderRoute: typeof ApiPaymentsRazorpayVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -742,6 +805,9 @@ const rootRouteChildren: RootRouteChildren = {
   KitchenLoginRoute: KitchenLoginRoute,
   MenuSlugRoute: MenuSlugRoute,
   OrderIdRoute: OrderIdRoute,
+  ApiPaymentsOrderIdStatusRoute: ApiPaymentsOrderIdStatusRoute,
+  ApiPaymentsRazorpayCreateOrderRoute: ApiPaymentsRazorpayCreateOrderRoute,
+  ApiPaymentsRazorpayVerifyRoute: ApiPaymentsRazorpayVerifyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -12,6 +12,9 @@ const Confetti = lazy(() =>
   import("@/components/shop/Confetti").then((m) => ({ default: m.Confetti })),
 );
 import { useDB } from "@/services/store";
+import { resumeRazorpayCheckout, verifyRazorpayPayment } from "@/services/api";
+import { openRazorpayCheckout } from "@/components/shop/razorpay-checkout";
+import { paymentCaption } from "@/services/payment-status";
 import { inr } from "@/services/pricing";
 import { minutesPerOrder, waitForOrder } from "@/services/wait";
 import type { Order, OrderStatus } from "@/services/types";
@@ -38,12 +41,51 @@ const MSG: Record<OrderStatus, (o: Order) => string> = {
 };
 
 
+async function retryPayment(order: Order, setPaying: (busy: boolean) => void) {
+  setPaying(true);
+  try {
+    const session = await resumeRazorpayCheckout(order.id);
+    if (session.alreadyPaid) {
+      toast.success(`Order #${session.number} is already paid.`);
+      return;
+    }
+    const result = await openRazorpayCheckout(
+      {
+        keyId: session.keyId,
+        razorpayOrderId: session.razorpayOrderId,
+        amountPaise: session.amountPaise,
+        currency: "INR",
+        description: `Order #${session.number}`,
+        prefillName: session.prefillName,
+        prefillContact: session.prefillContact,
+      },
+      async (response) => {
+        const paid = await verifyRazorpayPayment({
+          orderId: session.orderId,
+          razorpayOrderId: response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+        });
+        if (!paid.paid) throw new Error("Payment is not confirmed yet.");
+        toast.success(`Order #${paid.number} paid!`);
+      },
+    );
+    if (result === "failed") toast.error("Payment didn't go through. You can try again.");
+    if (result === "dismissed") toast("Payment was not completed.");
+  } catch (error) {
+    toast.error((error as Error).message);
+  } finally {
+    setPaying(false);
+  }
+}
+
 function OrderPage() {
   const { id } = Route.useParams();
   const db = useDB();
   const o = db.orders.find((x) => x.id === id);
   const prev = useRef(o?.status);
   const [party, setParty] = useState(false);
+  const [paying, setPaying] = useState(false);
   useEffect(() => {
     if (o && o.status === "Ready" && prev.current !== "Ready") {
       setParty(true);
@@ -67,7 +109,8 @@ function OrderPage() {
   const live = !["Collected", "Rejected"].includes(o.status);
   const perOrder = minutesPerOrder(outlet);
   const readyIn = waitForOrder(db.orders, o.outletId, o.id, perOrder);
-  const showQr = o.payment === "online" && !!o.qrToken;
+  const showQr = o.payment === "online" && o.paid && !!o.qrToken;
+  const awaitingPayment = o.payment === "online" && !o.paid;
   const qrValue = JSON.stringify({ id: o.id, o: o.outletId, t: o.qrToken });
   const leftover = o.lines.filter((l) => l.lineStatus !== "collected");
 
@@ -82,13 +125,15 @@ function OrderPage() {
         eyebrow={outlet?.name}
         title={`Order #${o.number}`}
         sub={
-          live
-            ? o.status === "Ready"
-              ? showQr
-                ? "Ready now — show your QR at the counter"
-                : "Ready now — tell them your order number"
-              : `Order will be ready in ${readyIn} min`
-            : `Status: ${o.status}`
+          awaitingPayment
+            ? "Payment isn't complete yet. The kitchen starts after Razorpay confirms it."
+            : live
+              ? o.status === "Ready"
+                ? showQr
+                  ? "Ready now — show your QR at the counter"
+                  : "Ready now — tell them your order number"
+                : `Order will be ready in ${readyIn} min`
+              : `Status: ${o.status}`
         }
       />
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-10 sm:px-6">
@@ -165,6 +210,19 @@ function OrderPage() {
                   </Button>
                 </div>
               </>
+            ) : awaitingPayment ? (
+              <div className="py-8">
+                <p className="font-display text-5xl">#{o.number}</p>
+                <p className="mt-3 text-lg font-semibold">{paymentCaption(o)}</p>
+                <p className="text-sm">Pay to send this order to the kitchen.</p>
+                <Button
+                  className="mt-4"
+                  disabled={paying}
+                  onClick={() => void retryPayment(o, setPaying)}
+                >
+                  {paying ? "Opening payment…" : `Pay ${inr(o.total)}`}
+                </Button>
+              </div>
             ) : o.payment === "online" ? (
               <div className="py-10">
                 <p className="font-display text-5xl">#{o.number}</p>
@@ -185,11 +243,7 @@ function OrderPage() {
             <h2 className="text-2xl font-bold">Bill</h2>
             <p className="text-xs text-muted-foreground">
               {new Date(o.createdAt).toLocaleString("en-IN")} ·{" "}
-              {o.payment === "online"
-                ? "Paid online"
-                : o.paid
-                  ? "Paid at counter"
-                  : "To pay at counter"}
+              {paymentCaption(o)}
             </p>
             <div className="my-4">
               <BillLines lines={o.lines} />

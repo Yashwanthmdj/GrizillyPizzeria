@@ -181,6 +181,10 @@ export async function processWhatsAppOutbox(idempotencyKey: string) {
   });
 }
 
+export function orderConfirmationKey(orderId: string) {
+  return `order_confirm:${orderId}`;
+}
+
 export function enqueueOrderConfirmationSafe(input: {
   orderId: string;
   phone: string;
@@ -189,7 +193,7 @@ export function enqueueOrderConfirmationSafe(input: {
   orderTotal: number;
 }) {
   const cfg = interaktConfig();
-  const key = `order_confirm:${input.orderId}`;
+  const key = orderConfirmationKey(input.orderId);
   void (async () => {
     try {
       await enqueueWhatsApp({

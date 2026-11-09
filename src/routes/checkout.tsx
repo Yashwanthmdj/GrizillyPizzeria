@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, CreditCard, Landmark, Loader2, Smartphone, Store, Wallet, X } from "lucide-react";
-import { useState } from "react";
+import { Check, Loader2, Store, Wallet, X } from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EASE } from "@/components/brand";
@@ -9,7 +9,17 @@ import { ShopLayout, seo } from "@/components/shop/ShopLayout";
 import { BillLines, Row } from "@/components/shop/Bill";
 import { useDB, useSession } from "@/services/store";
 import { AuthPanel } from "@/components/shop/AuthPanel";
-import { applyCoupon, clearCoupon, placeOrder, selectOutlet, setRedeem } from "@/services/api";
+import {
+  applyCoupon,
+  clearCoupon,
+  fetchPaymentStatus,
+  placeOrder,
+  selectOutlet,
+  setRedeem,
+  startRazorpayCheckout,
+  verifyRazorpayPayment,
+} from "@/services/api";
+import { openRazorpayCheckout } from "@/components/shop/razorpay-checkout";
 import { billOptions, cartSubtotal, computeBill, inr, validateCoupon } from "@/services/pricing";
 import { canOrder } from "@/services/outlet-status";
 import type { PaymentMethod } from "@/services/types";
@@ -37,7 +47,9 @@ function Checkout() {
   const [busy, setBusy] = useState(false);
   const [notes, setNotes] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>("online");
-  const [payOpen, setPayOpen] = useState(false);
+  const [payPhase, setPayPhase] = useState<"idle" | "processing" | "failed" | "cancelled">("idle");
+  const [payError, setPayError] = useState("");
+  const paying = useRef(false);
   const outlet = db.outlets.find((o) => o.id === s.outletId);
   const reward = db.loyalty.steps.find((x) => x.id === s.redeemStepId) ?? null;
   const subtotal = cartSubtotal(s.cart);
@@ -74,11 +86,13 @@ function Checkout() {
       </ShopLayout>
     );
 
-  async function finish(method: PaymentMethod) {
+  async function finishCounter() {
+    if (paying.current) return;
+    paying.current = true;
     setBusy(true);
     try {
       const o = await placeOrder({
-        payment: method,
+        payment: "counter",
         name,
         notes: notes || undefined,
       });
@@ -87,8 +101,71 @@ function Checkout() {
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
+      paying.current = false;
       setBusy(false);
-      setPayOpen(false);
+    }
+  }
+
+  async function payOnline() {
+    if (paying.current) return;
+    paying.current = true;
+    setBusy(true);
+    setPayError("");
+    setPayPhase("processing");
+    try {
+      const session = await startRazorpayCheckout({
+        name,
+        notes: notes || undefined,
+      });
+      if (session.alreadyPaid) {
+        setPayPhase("idle");
+        toast.success(`Order #${session.number} is already paid.`);
+        nav({ to: "/order/$id", params: { id: session.orderId } });
+        return;
+      }
+      if (session.totalRupees !== bill.total) {
+        toast(`Total updated to ${inr(session.totalRupees)}`);
+      }
+      const result = await openRazorpayCheckout(
+        {
+          keyId: session.keyId,
+          razorpayOrderId: session.razorpayOrderId,
+          amountPaise: session.amountPaise,
+          currency: "INR",
+          description: `Order #${session.number}`,
+          prefillName: session.prefillName,
+          prefillContact: session.prefillContact,
+        },
+        async (response) => {
+          const order = await verifyRazorpayPayment({
+            orderId: session.orderId,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+          });
+          if (!order.paid) throw new Error("Payment is not confirmed yet.");
+          toast.success(`Order #${order.number} paid!`);
+          nav({ to: "/order/$id", params: { id: order.id } });
+        },
+      );
+      if (result === "paid") {
+        setPayPhase("idle");
+        return;
+      }
+      const status = await fetchPaymentStatus(session.orderId);
+      if (status.paid) {
+        setPayPhase("idle");
+        toast.success(`Order #${status.number} paid!`);
+        nav({ to: "/order/$id", params: { id: status.orderId } });
+        return;
+      }
+      setPayPhase(result === "failed" ? "failed" : "cancelled");
+    } catch (e) {
+      setPayError((e as Error).message);
+      setPayPhase("failed");
+    } finally {
+      paying.current = false;
+      setBusy(false);
     }
   }
 
@@ -215,7 +292,7 @@ function Checkout() {
                         onClick={() => setPayment("online")}
                         icon={<Wallet />}
                         t="Pay online"
-                        d="QR appears when the kitchen marks it ready"
+                        d="UPI, card or netbanking. QR appears when the kitchen marks it ready."
                       />
                       <PayOpt
                         on={payment === "counter"}
@@ -254,9 +331,7 @@ function Checkout() {
                         size="lg"
                         className="flex-1"
                         disabled={busy || short > 0}
-                        onClick={() =>
-                          payment === "online" ? setPayOpen(true) : finish("counter")
-                        }
+                        onClick={() => (payment === "online" ? void payOnline() : finishCounter())}
                       >
                         {busy && <Loader2 className="animate-spin" />}{" "}
                         {payment === "online" ? `Pay ${inr(bill.total)}` : "Place order"}
@@ -334,11 +409,11 @@ function Checkout() {
           </aside>
         </div>
       </div>
-      <PayModal
-        open={payOpen}
-        amount={bill.total}
-        onClose={() => setPayOpen(false)}
-        onSuccess={() => finish("online")}
+      <PayState
+        phase={payPhase}
+        error={payError}
+        onClose={() => setPayPhase("idle")}
+        onRetry={() => void payOnline()}
       />
     </ShopLayout>
   );
@@ -407,19 +482,18 @@ function PayOpt({
   );
 }
 
-function PayModal({
-  open,
-  amount,
+function PayState({
+  phase,
+  error,
   onClose,
-  onSuccess,
+  onRetry,
 }: {
-  open: boolean;
-  amount: number;
+  phase: "idle" | "processing" | "failed" | "cancelled";
+  error: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onRetry: () => void;
 }) {
-  const [tab, setTab] = useState<"upi" | "card" | "net">("upi");
-  const [paying, setPaying] = useState(false);
+  const open = phase !== "idle";
   return (
     <AnimatePresence>
       {open && (
@@ -440,87 +514,35 @@ function PayModal({
             className="w-full max-w-sm overflow-hidden rounded-3xl bg-card shadow-lift"
           >
             <div className="flex items-center justify-between bg-cocoa px-5 py-4 text-cream">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-secondary">
-                  Pay online
-                </p>
-                <p className="font-display text-2xl">{inr(amount)}</p>
-              </div>
-              <button
-                onClick={onClose}
-                aria-label="Cancel payment"
-                className="grid size-9 place-items-center rounded-full hover:bg-cream/10"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
-            <div className="flex border-b">
-              {(
-                [
-                  ["upi", "UPI", Smartphone],
-                  ["card", "Card", CreditCard],
-                  ["net", "Netbanking", Landmark],
-                ] as const
-              ).map(([k, l, I]) => (
+              <p className="text-xs font-bold uppercase tracking-widest text-secondary">Pay online</p>
+              {phase !== "processing" && (
                 <button
-                  key={k}
-                  onClick={() => setTab(k)}
-                  className={cn(
-                    "flex flex-1 items-center justify-center gap-1.5 py-3 text-sm font-semibold",
-                    tab === k ? "border-b-2 border-primary text-primary" : "text-muted-foreground",
-                  )}
+                  onClick={onClose}
+                  aria-label="Close payment status"
+                  className="grid size-9 place-items-center rounded-full hover:bg-cream/10"
                 >
-                  <I className="size-4" />
-                  {l}
+                  <X className="size-5" />
                 </button>
-              ))}
+              )}
             </div>
             <div className="space-y-3 p-5">
-              {tab === "upi" && (
-                <input placeholder="yourname@upi" aria-label="UPI ID" className={inputCls} />
-              )}
-              {tab === "card" && (
+              {phase === "processing" ? (
+                <p className="flex items-center gap-2 font-semibold">
+                  <Loader2 className="animate-spin" /> Opening secure payment…
+                </p>
+              ) : (
                 <>
-                  <input
-                    placeholder="Card number"
-                    aria-label="Card number"
-                    className={inputCls}
-                  />
-                  <div className="flex gap-2">
-                    <input placeholder="MM/YY" aria-label="Expiry" className={inputCls} />
-                    <input placeholder="CVV" aria-label="CVV" className={inputCls} />
-                  </div>
+                  <p className="font-semibold">
+                    {phase === "failed" ? "Payment didn't go through." : "Payment was not completed."}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {error || "You can try again. The kitchen starts this order only after payment is confirmed."}
+                  </p>
+                  <Button size="lg" className="w-full" onClick={onRetry}>
+                    Retry payment
+                  </Button>
                 </>
               )}
-              {tab === "net" && (
-                <select className={inputCls} aria-label="Bank">
-                  <option>HDFC Bank</option>
-                  <option>ICICI Bank</option>
-                  <option>SBI</option>
-                </select>
-              )}
-              <Button
-                size="lg"
-                className="w-full"
-                disabled={paying}
-                onClick={async () => {
-                  setPaying(true);
-                  await new Promise((r) => setTimeout(r, 1200));
-                  setPaying(false);
-                  onSuccess();
-                }}
-              >
-                {paying ? (
-                  <>
-                    <Loader2 className="animate-spin" /> Processing…
-                  </>
-                ) : (
-                  `Pay ${inr(amount)}`
-                )}
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Demo payment. Your pickup QR appears when the kitchen marks the order ready.
-              </p>
             </div>
           </motion.div>
         </motion.div>

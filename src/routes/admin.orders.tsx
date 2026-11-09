@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { StoreGate, fieldCls } from "@/components/admin/ui";
-import { setOrderStatus } from "@/services/api";
+import { markCounterCollected, setOrderStatus } from "@/services/api";
+import { paymentCaption } from "@/services/payment-status";
 import { nextStatuses } from "@/services/orders";
 import { inr } from "@/services/pricing";
 import { useDB } from "@/services/store";
@@ -188,10 +189,22 @@ function OrdersAdmin() {
                 </li>
               ))}
             </ol>
-            <p className="mt-4 text-sm">
-              Payment: {current.payment === "online" ? "Online" : "Pay at counter"} ·{" "}
-              {current.paid ? "Paid" : "Not collected"}
-            </p>
+            <p className="mt-4 text-sm">Payment: {paymentCaption(current)}</p>
+            {current.payment === "counter" && !current.paid && (
+              <Button
+                className="mt-3"
+                onClick={async () => {
+                  try {
+                    await markCounterCollected(current.id);
+                    toast.success(`#${current.number} marked collected`);
+                  } catch (error) {
+                    toast.error((error as Error).message);
+                  }
+                }}
+              >
+                Mark payment collected
+              </Button>
+            )}
             <p className="text-sm">
               QR:{" "}
               {current.payment !== "online"

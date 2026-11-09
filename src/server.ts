@@ -49,6 +49,10 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
+      if (url.pathname === "/api/webhooks/razorpay") {
+        const { handleRazorpayWebhook } = await import("./data/payments");
+        return await handleRazorpayWebhook(request);
+      }
       if (url.pathname === "/api/interakt-webhook") {
         const { handleInteraktWebhook } = await import("./data/interakt-webhook");
         return await handleInteraktWebhook(request);

@@ -1,5 +1,5 @@
 import { uid } from "@/lib/id";
-import { billOptions, cartSubtotal, computeBill, unitPrice, validateCoupon } from "@/services/pricing";
+import { billOptions, cartSubtotal, computeBill, repriceLines, unitPrice, validateCoupon } from "@/services/pricing";
 import { canTransition } from "@/services/orders";
 import { canOrder } from "@/services/outlet-status";
 import { evaluateScan } from "@/services/scan";
@@ -210,6 +210,14 @@ async function loadOrders(): Promise<Order[]> {
   return rs.rows.map((r) => parseJson<Order>(s(r, "data"), null as unknown as Order)).filter(Boolean);
 }
 
+export async function getOrderById(id: string) {
+  const rs = await exec("SELECT data FROM orders WHERE id = ?", [id]);
+  const row = rs.rows[0];
+  if (!row) return null;
+  const order = parseJson<Order | null>(s(row, "data"), null);
+  return order?.id ? order : null;
+}
+
 async function loadCoupons(): Promise<Coupon[]> {
   const rs = await exec("SELECT data FROM coupons");
   return rs.rows.map((r) => parseJson<Coupon>(s(r, "data"), null as unknown as Coupon)).filter(Boolean);
@@ -328,8 +336,9 @@ function withWait(outlets: Outlet[], orders: Order[]) {
 }
 
 function publicOrder(o: Order): Order {
+  const { razorpayOrderId: _razorpayOrderId, razorpayPaymentId: _razorpayPaymentId, ...rest } = o;
   return {
-    ...o,
+    ...rest,
     phone: "",
     customerName: firstName(o.customerName),
     qrToken: undefined,
@@ -424,7 +433,12 @@ export async function snapshot(ident: {
   const mine = customer?.phone ? orders.filter((o) => o.phone === customer.phone) : [];
   const mineIds = new Set(mine.map((o) => o.id));
   const feed = orders
-    .filter((o) => !mineIds.has(o.id) && Date.now() - o.createdAt < 4 * 3600_000)
+    .filter(
+      (o) =>
+        !mineIds.has(o.id) &&
+        Date.now() - o.createdAt < 4 * 3600_000 &&
+        !(o.payment === "online" && !o.paid),
+    )
     .slice(0, 20);
   const me = customer?.phone ? (await loadCustomers()).filter((c) => c.phone === customer.phone) : [];
   return {
@@ -671,7 +685,7 @@ export async function verifyCustomerOtp(input: {
   });
 }
 
-async function saveOrder(order: Order) {
+export async function saveOrder(order: Order) {
   await exec(
     `INSERT INTO orders (id, number, outlet_id, phone, status, created_at, data)
      VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -680,109 +694,157 @@ async function saveOrder(order: Order) {
   );
 }
 
-export async function placeOrder(
-  auth: AuthSession | null,
-  input: {
-    payment: PaymentMethod;
-    name: string;
-    notes?: string;
-    scheduledFor?: number;
-    cart: CartLine[];
-    outletId: string | null;
-    redeemStepId: string | null;
-    couponCode: string | null;
-  },
-) {
-  const phone = auth?.kind === "customer" ? auth.phone : undefined;
-  if (!phone) throw new Error("Sign in to place an order.");
-  if (!input.outletId || !input.cart.length) throw new Error("Missing outlet or cart.");
-  return serialize(async () => {
-    const [outlets, orders, coupons, settings, loyalty, customers] = await Promise.all([
-      loadOutlets(),
-      loadOrders(),
-      loadCoupons(),
-      loadSettings(),
-      loadLoyalty(),
-      loadCustomers(),
-    ]);
-    const outlet = outlets.find((o) => o.id === input.outletId);
-    if (!outlet) throw new Error("Unknown outlet.");
-    if (!canOrder(outlet)) throw new Error("This outlet isn't taking orders right now.");
-    const subtotal = cartSubtotal(input.cart);
-    if (subtotal < settings.minimumOrder) {
-      throw new Error(`Minimum order is Rs ${settings.minimumOrder.toLocaleString("en-IN")}.`);
-    }
-    const customer = customers.find((c) => c.phone === phone);
-    let step = loyalty.steps.find((x) => x.id === input.redeemStepId) ?? null;
-    if (step && (customer?.points ?? 0) < step.points) step = null;
-    const coupon = input.couponCode
-      ? (coupons.find((c) => c.code.toLowerCase() === input.couponCode!.toLowerCase()) ?? null)
-      : null;
-    if (coupon) {
-      const check = validateCoupon(coupon, subtotal, Date.now());
-      if (!check.ok) throw new Error(check.reason);
-    }
-    const bill = computeBill(input.cart, loyalty, step, billOptions(settings, coupon));
-    const now = Date.now();
-    const number = Number((await meta("nextNumber")) ?? 101);
-    const lines: CartLine[] = input.cart.map((l) => ({
-      ...l,
-      lineId: l.lineId || uid(),
-      prepMinutes: l.prepMinutes || settings.defaultPrepMinutes,
-      lineStatus: "queued",
-    }));
-    const waitMins = waitForNewOrder(orders, outlet.id, minutesPerOrder(outlet));
-    const order: Order = {
-      id: `ord_${number}_${uid()}`,
-      number,
-      outletId: outlet.id,
-      customerName: input.name.trim() || auth?.customerName || customer?.name || "Guest",
-      phone,
-      lines,
-      ...bill,
-      payment: input.payment,
-      paid: input.payment === "online",
-      status: "Placed",
-      history: [{ status: "Placed", at: now }],
-      createdAt: now,
-      promisedAt: input.scheduledFor ?? now + waitMins * 6e4,
-      waitMinutes: waitMins,
-      ...(coupon?.code ? { couponCode: coupon.code } : {}),
-      ...(input.scheduledFor ? { scheduledFor: input.scheduledFor } : {}),
-      ...(input.notes ? { notes: input.notes } : {}),
-    };
-    await saveOrder(order);
-    await setMeta("nextNumber", String(number + 1));
+type PlaceInput = {
+  payment: PaymentMethod;
+  /** Online checkout only. Keeps the order unpaid until Razorpay capture is verified. */
+  awaitPayment?: boolean;
+  name: string;
+  notes?: string;
+  scheduledFor?: number;
+  cart: CartLine[];
+  outletId: string | null;
+  redeemStepId: string | null;
+  couponCode: string | null;
+};
+
+/** Coupon, points and WhatsApp run once. A later call only applies payment fields. */
+export async function grantOrderBenefits(order: Order, extra?: Partial<Order>) {
+  if (order.benefitsApplied) {
+    const next = { ...order, ...extra };
+    await saveOrder(next);
+    return next;
+  }
+  const now = Date.now();
+  if (order.couponCode) {
+    const coupons = await loadCoupons();
+    const coupon = coupons.find((c) => c.code.toLowerCase() === order.couponCode!.toLowerCase());
     if (coupon) {
       await exec("INSERT OR REPLACE INTO coupons (id, data) VALUES (?, ?)", [
         coupon.id,
         JSON.stringify({ ...coupon, used: coupon.used + 1 }),
       ]);
     }
-    if (step && customer) {
-      const nextPoints = customer.points - step.points;
-      await exec("UPDATE customers SET points = ?, history = ? WHERE phone = ?", [
-        nextPoints,
-        JSON.stringify([{ at: now, delta: -step.points, label: `Redeemed ${step.label}` }, ...customer.history]),
-        customer.phone,
-      ]);
+  }
+  if (order.pointsUsed > 0) {
+    const customers = await loadCustomers();
+    const customer = customers.find((c) => c.phone === order.phone);
+    if (customer) {
+      const deduct = Math.min(customer.points, order.pointsUsed);
+      if (deduct > 0) {
+        await exec("UPDATE customers SET points = ?, history = ? WHERE phone = ?", [
+          customer.points - deduct,
+          JSON.stringify([
+            { at: now, delta: -deduct, label: `Redeemed on order #${order.number}` },
+            ...customer.history,
+          ]),
+          customer.phone,
+        ]);
+      }
     }
-    await stamp(order.customerName, "order.place", `#${order.number} placed (${input.payment})`);
-    // WhatsApp confirmation is best-effort and never blocks checkout.
-    enqueueOrderConfirmationSafe({
-      orderId: order.id,
-      phone: order.phone,
-      customerName: order.customerName,
-      orderNumber: order.number,
-      orderTotal: order.total,
-    });
-    return order;
+  }
+  const next: Order = { ...order, ...extra, benefitsApplied: true };
+  await saveOrder(next);
+  // Best-effort. A missing template or a down provider must not undo the order.
+  enqueueOrderConfirmationSafe({
+    orderId: next.id,
+    phone: next.phone,
+    customerName: next.customerName,
+    orderNumber: next.number,
+    orderTotal: next.total,
   });
+  return next;
 }
 
-/** Online pickup QR is created only once the kitchen marks the order ready. */
+export async function placeOrder(auth: AuthSession | null, input: PlaceInput) {
+  if (input.payment === "online" && !input.awaitPayment) {
+    throw new Error("Online orders are confirmed only after Razorpay verifies the payment.");
+  }
+  return serialize(() => placeOrderUnlocked(auth, input));
+}
+
+/** Caller must already hold the write lock. Online orders skip benefits until payment is captured. */
+export async function placeOrderUnlocked(auth: AuthSession | null, input: PlaceInput) {
+  const phone = auth?.kind === "customer" ? auth.phone : undefined;
+  if (!phone) throw new Error("Sign in to place an order.");
+  if (!input.outletId || !input.cart.length) throw new Error("Missing outlet or cart.");
+  if (input.payment === "online" && !input.awaitPayment) {
+    throw new Error("Online orders are confirmed only after Razorpay verifies the payment.");
+  }
+  const [outlets, orders, menu, coupons, settings, loyalty, customers] = await Promise.all([
+    loadOutlets(),
+    loadOrders(),
+    loadMenu(),
+    loadCoupons(),
+    loadSettings(),
+    loadLoyalty(),
+    loadCustomers(),
+  ]);
+  const outlet = outlets.find((o) => o.id === input.outletId);
+  if (!outlet) throw new Error("Unknown outlet.");
+  if (!canOrder(outlet)) throw new Error("This outlet isn't taking orders right now.");
+  const lines = repriceLines(input.cart, menu, outlet.id).map((line) => ({
+    ...line,
+    lineId: line.lineId || uid(),
+    prepMinutes: line.prepMinutes || settings.defaultPrepMinutes,
+    lineStatus: "queued" as const,
+  }));
+  const subtotal = cartSubtotal(lines);
+  if (subtotal < settings.minimumOrder) {
+    throw new Error(`Minimum order is Rs ${settings.minimumOrder.toLocaleString("en-IN")}.`);
+  }
+  const customer = customers.find((c) => c.phone === phone);
+  let step = loyalty.steps.find((x) => x.id === input.redeemStepId) ?? null;
+  if (step && (customer?.points ?? 0) < step.points) step = null;
+  const coupon = input.couponCode
+    ? (coupons.find((c) => c.code.toLowerCase() === input.couponCode!.toLowerCase()) ?? null)
+    : null;
+  if (coupon) {
+    const check = validateCoupon(coupon, subtotal, Date.now());
+    if (!check.ok) throw new Error(check.reason);
+  }
+  const bill = computeBill(lines, loyalty, step, billOptions(settings, coupon));
+  const now = Date.now();
+  const number = Number((await meta("nextNumber")) ?? 101);
+  const waitMins = waitForNewOrder(orders, outlet.id, minutesPerOrder(outlet));
+  const order: Order = {
+    id: `ord_${number}_${uid()}`,
+    number,
+    outletId: outlet.id,
+    customerName: input.name.trim() || auth?.customerName || customer?.name || "Guest",
+    phone,
+    lines,
+    ...bill,
+    payment: input.payment,
+    paid: false,
+    paymentStatus: input.payment === "counter" ? "UNPAID" : "PENDING",
+    status: "Placed",
+    history: [{ status: "Placed", at: now }],
+    createdAt: now,
+    promisedAt: input.scheduledFor ?? now + waitMins * 6e4,
+    waitMinutes: waitMins,
+    ...(coupon?.code ? { couponCode: coupon.code } : {}),
+    ...(input.scheduledFor ? { scheduledFor: input.scheduledFor } : {}),
+    ...(input.notes ? { notes: input.notes } : {}),
+  };
+  await saveOrder(order);
+  await setMeta("nextNumber", String(number + 1));
+  await stamp(
+    order.customerName,
+    "order.place",
+    `#${order.number} placed (${input.payment}${input.payment === "online" ? ", unpaid" : ""})`,
+  );
+  if (input.payment === "counter") {
+    const saved = await grantOrderBenefits(order);
+    const { recordCounterPayment } = await import("./payments");
+    await recordCounterPayment(saved);
+    return saved;
+  }
+  return order;
+}
+
+/** Online pickup QR is created only once the kitchen marks a paid order ready. */
 function issuePickupQr(order: Order): Order {
-  if (order.status !== "Ready" || order.payment !== "online" || order.qrToken) return order;
+  if (order.status !== "Ready" || order.payment !== "online" || !order.paid || order.qrToken) return order;
   return { ...order, qrToken: uid() + uid() };
 }
 
@@ -790,7 +852,11 @@ function syncOrderStatus(order: Order): Order {
   const lines = order.lines;
   if (!lines.length) return issuePickupQr(order);
   if (lines.every((l) => l.lineStatus === "collected")) {
-    return { ...order, status: "Collected", qrUsed: true, paid: true };
+    return {
+      ...order,
+      status: "Collected",
+      ...(order.payment === "online" ? { qrUsed: true } : {}),
+    };
   }
   const open = lines.filter((l) => l.lineStatus !== "collected");
   if (open.length && open.every((l) => l.lineStatus === "ready")) {
@@ -809,6 +875,9 @@ export async function setOrderStatus(auth: AuthSession | null, id: string, statu
     const current = orders.find((o) => o.id === id);
     if (!current) throw new Error("Order not found.");
     guardOutlet(auth, current.outletId);
+    if (current.payment === "online" && !current.paid && status !== "Rejected") {
+      throw new Error("This online order is not paid yet.");
+    }
     if (status === "Collected") {
       const next = collectReadyLines(current);
       await finishIfCollected(next, auth);
@@ -852,6 +921,7 @@ export async function setLineReady(auth: AuthSession | null, orderId: string, li
     const current = orders.find((o) => o.id === orderId);
     if (!current) throw new Error("Order not found.");
     guardOutlet(auth, current.outletId);
+    if (current.payment === "online" && !current.paid) throw new Error("This online order is not paid yet.");
     const now = Date.now();
     const lines = current.lines.map((l) =>
       l.lineId === lineId && l.lineStatus !== "collected"
@@ -930,6 +1000,27 @@ export async function collectPickup(auth: AuthSession | null, raw: string, outle
   }
   if (!order) return { ok: false as const, reason: "No order found" };
   return { ok: true as const, order };
+}
+
+export async function markCounterPaymentCollected(auth: AuthSession | null, orderId: string) {
+  requireStaff(auth);
+  return serialize(async () => {
+    const current = await getOrderById(orderId);
+    if (!current) throw new Error("Order not found.");
+    guardOutlet(auth, current.outletId);
+    if (current.payment !== "counter") throw new Error("Online payments are confirmed by Razorpay.");
+    if (current.paid) return current;
+    const now = Date.now();
+    const next: Order = { ...current, paid: true, paymentStatus: "PAID" };
+    await saveOrder(next);
+    await exec(
+      `UPDATE payments SET status = 'PAID', paid_at = ?, updated_at = ?, error = NULL
+       WHERE order_id = ? AND method = 'PAY_AT_COUNTER'`,
+      [now, now, current.id],
+    );
+    await stamp(auth?.staffName ?? "Staff", "payment.collect", `#${next.number} counter payment collected`);
+    return next;
+  });
 }
 
 export async function confirmPickup(auth: AuthSession | null, orderId: string) {

@@ -8,7 +8,7 @@ import { VegDot } from "@/components/brand";
 import { SyncBadge } from "@/components/staff/SyncBadge";
 import { useKitchenOutletId } from "@/components/staff/StaffShell";
 import { useDB } from "@/services/store";
-import { setLineReady, setOrderStatus, updateOutlet } from "@/services/api";
+import { markCounterCollected, setLineReady, setOrderStatus, updateOutlet } from "@/services/api";
 import { inr } from "@/services/pricing";
 import { canOrder, isOpenNow } from "@/services/outlet-status";
 import { clockedInCount, liveQueue, minutesPerOrder, waitForOrder } from "@/services/wait";
@@ -245,7 +245,7 @@ function OrderCard({
                 : "bg-warning text-warning-foreground",
             )}
           >
-            {o.payment === "online" ? "PAID ONLINE" : "PAY AT COUNTER"}
+            {o.payment === "online" ? (o.paid ? "PAID ONLINE" : "PAYMENT PENDING") : o.paid ? "PAID AT COUNTER" : "PAY AT COUNTER"}
           </span>
           <p className="mt-1 text-sm font-bold text-muted-foreground">{o.status}</p>
         </div>
@@ -332,6 +332,23 @@ function OrderCard({
         {o.status === "Ready" && (
           <Button size="lg" variant="success" className="flex-1" onClick={() => act("Collected")}>
             Handed over
+          </Button>
+        )}
+        {o.payment === "counter" && !o.paid && (
+          <Button
+            size="lg"
+            variant="outline"
+            className="flex-1"
+            onClick={async () => {
+              try {
+                await markCounterCollected(o.id);
+                toast.success(`#${o.number} payment collected`);
+              } catch (error) {
+                toast.error((error as Error).message);
+              }
+            }}
+          >
+            Payment collected
           </Button>
         )}
       </div>

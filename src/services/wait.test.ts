@@ -24,6 +24,18 @@ function order(partial: Partial<Order> & Pick<Order, "id" | "number" | "createdA
 }
 
 describe("order-queue wait", () => {
+  it("keeps an unpaid online order off the kitchen queue", () => {
+    const q = liveQueue(
+      [
+        order({ id: "hold", number: 201, createdAt: 10, payment: "online", paid: false }),
+        order({ id: "paid", number: 202, createdAt: 20, payment: "online", paid: true }),
+        order({ id: "counter", number: 203, createdAt: 30, payment: "counter", paid: false }),
+      ],
+      "o1",
+    );
+    expect(q.map((o) => o.number)).toEqual([202, 203]);
+  });
+
   it("puts oldest tickets first", () => {
     const q = liveQueue(
       [
