@@ -27,7 +27,6 @@ export function MenuCard({
   const soldOut = !!outletId && !item.availability[outletId];
   return (
     <motion.article
-      layoutId={`card-${item.id}`}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE, delay: Math.min(index, 8) * 0.05 }}

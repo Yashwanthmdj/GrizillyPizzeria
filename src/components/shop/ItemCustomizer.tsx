@@ -100,52 +100,54 @@ export function ItemCustomizer({
           className="mt-2 h-11 w-full rounded-xl border-2 border-input bg-card px-3 outline-none focus:border-primary"
         />
       </label>
-      <div className="mt-5 flex items-center gap-3">
-        <div className="flex items-center gap-1 rounded-full bg-muted p-1">
-          <button
-            type="button"
-            className="grid size-11 place-items-center rounded-full bg-card"
-            onClick={() => setQty((q) => Math.max(1, q - 1))}
-            aria-label="Decrease quantity"
+      <div className="sticky bottom-0 mt-5 -mx-4 border-t border-border/70 bg-background/95 px-4 py-3 backdrop-blur sm:-mx-5 sm:px-5">
+        <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1 rounded-full bg-muted p-1">
+            <button
+              type="button"
+              className="grid size-11 place-items-center rounded-full bg-card"
+              onClick={() => setQty((q) => Math.max(1, q - 1))}
+              aria-label="Decrease quantity"
+            >
+              <Minus className="size-4" />
+            </button>
+            <span className="w-7 text-center font-bold">{qty}</span>
+            <button
+              type="button"
+              className="grid size-11 place-items-center rounded-full bg-card"
+              onClick={() => setQty((q) => q + 1)}
+              aria-label="Increase quantity"
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+          <Button
+            size="lg"
+            className="min-h-12 flex-1 text-base"
+            disabled={soldOut}
+            onClick={() =>
+              onAdd({
+                itemId: item.id,
+                name: item.name,
+                image: item.image,
+                veg: item.veg,
+                size: chosenSize,
+                toppings: tops,
+                note: note.trim() || undefined,
+                unitPrice: price,
+                qty,
+              })
+            }
           >
-            <Minus className="size-4" />
-          </button>
-          <span className="w-7 text-center font-bold">{qty}</span>
-          <button
-            type="button"
-            className="grid size-11 place-items-center rounded-full bg-card"
-            onClick={() => setQty((q) => q + 1)}
-            aria-label="Increase quantity"
-          >
-            <Plus className="size-4" />
-          </button>
+            {soldOut ? (
+              "Sold out here"
+            ) : (
+              <>
+                Add · <motion.span key={price * qty}>{inr(price * qty)}</motion.span>
+              </>
+            )}
+          </Button>
         </div>
-        <Button
-          size="lg"
-          className="flex-1"
-          disabled={soldOut}
-          onClick={() =>
-            onAdd({
-              itemId: item.id,
-              name: item.name,
-              image: item.image,
-              veg: item.veg,
-              size: chosenSize,
-              toppings: tops,
-              note: note.trim() || undefined,
-              unitPrice: price,
-              qty,
-            })
-          }
-        >
-          {soldOut ? (
-            "Sold out here"
-          ) : (
-            <>
-              Add · <motion.span key={price * qty}>{inr(price * qty)}</motion.span>
-            </>
-          )}
-        </Button>
       </div>
     </div>
   );
