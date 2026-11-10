@@ -57,6 +57,26 @@ const FRY_TOPS: Topping[] = [
   { name: "Kurkure", price: 40, veg: true },
 ];
 
+/** Only ingredients named in the item description become paid extras. */
+const DESC_EXTRAS: { re: RegExp; topping: Topping }[] = [
+  { re: /\b(mozzarella|cheese)\b/i, topping: { name: "Extra Cheese", price: 30, veg: true } },
+  { re: /\bpaneer\b/i, topping: { name: "Extra Paneer", price: 50, veg: true } },
+  { re: /\bmushroom\b/i, topping: { name: "Extra Mushroom", price: 40, veg: true } },
+  { re: /\bjalapeno\b/i, topping: { name: "Extra Jalapeno", price: 25, veg: true } },
+  { re: /\btomato\b/i, topping: { name: "Extra Tomato", price: 20, veg: true } },
+  { re: /\bolives?\b/i, topping: { name: "Extra Olives", price: 30, veg: true } },
+  { re: /\bonion\b/i, topping: { name: "Extra Onion", price: 20, veg: true } },
+  { re: /\bcorn\b/i, topping: { name: "Extra Corn", price: 25, veg: true } },
+  { re: /\b(pepper|paprika)\b/i, topping: { name: "Extra Pepper", price: 25, veg: true } },
+  { re: /\bpesto\b/i, topping: { name: "Extra Pesto", price: 30, veg: true } },
+  { re: /\bbasil\b/i, topping: { name: "Extra Basil", price: 15, veg: true } },
+  { re: /\blettuce\b/i, topping: { name: "Extra Lettuce", price: 15, veg: true } },
+  { re: /\bmayo\b/i, topping: { name: "Extra Garlic Mayo", price: 20, veg: true } },
+  { re: /\bgarlic butter\b/i, topping: { name: "Extra Garlic Butter", price: 20, veg: true } },
+  { re: /\bwhite sauce\b/i, topping: { name: "Extra White Sauce", price: 25, veg: true } },
+  { re: /\bchutney\b/i, topping: { name: "Extra Chutney", price: 20, veg: true } },
+];
+
 const both = { o1: true, o2: true };
 
 function defaultPrep(category: MenuItem["category"]) {
@@ -68,6 +88,23 @@ function defaultPrep(category: MenuItem["category"]) {
   return 8;
 }
 
+/** Paid extras = ingredients listed in the description only (never invented from the name). */
+function extrasFor(category: MenuItem["category"], description: string): Topping[] | undefined {
+  if (category === "Dips") return undefined;
+  if (category === "Fries") return FRY_TOPS;
+
+  // Ignore "olive oil" so it does not become Extra Olives.
+  const text = description.replace(/\bolive oil\b/gi, " ");
+  const list: Topping[] = [];
+  const seen = new Set<string>();
+  for (const { re, topping } of DESC_EXTRAS) {
+    if (!re.test(text) || seen.has(topping.name)) continue;
+    seen.add(topping.name);
+    list.push(topping);
+  }
+  return list.length ? list : undefined;
+}
+
 function item(
   p: Partial<MenuItem> &
     Pick<MenuItem, "id" | "name" | "category" | "price" | "image" | "veg" | "description">,
@@ -77,7 +114,7 @@ function item(
     availability: { ...both },
     priceOverride: {},
     sizes: fries ? FRY_SIZES : undefined,
-    toppings: fries ? FRY_TOPS : undefined,
+    toppings: extrasFor(p.category, p.description),
     prepMinutes: defaultPrep(p.category),
     ...p,
     veg: true,
@@ -197,7 +234,7 @@ export const MENU: MenuItem[] = [
     price: 219,
     image: photo.jalapenoBread,
     badge: "Spicy",
-    description: "Jalapeno, garlic butter and cheese.",
+    description: "Jalapeno, tomato, garlic butter and cheese.",
   }),
   item({
     id: "g4",

@@ -59,9 +59,9 @@ export function ItemCustomizer({
           </div>
         </fieldset>
       )}
-      {item.toppings && (
+      {item.toppings && item.toppings.length > 0 && (
         <fieldset className="mt-5">
-          <legend className="font-display text-lg">Toppings</legend>
+          <legend className="font-display text-lg">Extras</legend>
           <div className="mt-2 flex flex-wrap gap-2">
             {item.toppings.map((t) => {
               const on = tops.includes(t.name);

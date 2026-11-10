@@ -63,7 +63,7 @@ function MenuAdmin() {
     const item: MenuItem = {
       ...draft,
       sizes: draft.category === "Fries" ? (draft.sizes ?? FRY_SIZES) : undefined,
-      toppings: draft.category === "Fries" ? draft.toppings : undefined,
+      toppings: draft.toppings?.length ? draft.toppings : undefined,
     };
     await upsertMenuItem(item);
     toast.success(`${item.name} saved`);

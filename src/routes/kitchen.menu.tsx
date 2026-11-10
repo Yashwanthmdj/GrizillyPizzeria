@@ -188,7 +188,14 @@ function Editor({ item, onClose }: { item: MenuItem; onClose: () => void }) {
           upsertMenuItem({
             ...m,
             sizes: m.category === "Fries" ? FRY_SIZES : undefined,
-            toppings: m.category === "Fries" ? (toppings.length ? toppings : FRY_TOPS) : undefined,
+            toppings:
+              m.category === "Fries"
+                ? toppings.length
+                  ? toppings
+                  : FRY_TOPS
+                : toppings.length
+                  ? toppings
+                  : m.toppings,
           });
           toast.success("Menu saved · live on the customer menu");
           onClose();
