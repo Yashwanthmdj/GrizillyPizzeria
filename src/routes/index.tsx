@@ -3,7 +3,7 @@ import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion
 import { ArrowRight, Gift, MapPin, QrCode, ShoppingBag, Smile } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
-import { menuPhotos } from "@/services/menu-photos";
+import margheritaHero from "@/assets/hero-margherita-circle.webp";
 import { Button } from "@/components/ui/button";
 import { BearMark, EASE, Reveal } from "@/components/brand";
 import { AnnouncementRail } from "@/components/shop/AnnouncementRail";
@@ -108,8 +108,8 @@ function Home() {
         ref={ref}
         className="relative overflow-x-clip bg-hero grain text-primary-foreground md:flex md:min-h-[calc(100svh-4rem)] md:items-center"
       >
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-8 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-2 md:gap-10 md:py-8 lg:gap-14">
-          <motion.div style={{ y: y2 }} className="relative z-10 min-w-0">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 md:grid-cols-2 md:gap-10 md:py-8 lg:gap-14">
+          <motion.div style={{ y: y2 }} className="relative z-10 min-w-0 pr-14 sm:pr-16 md:pr-0">
             <div className="flex flex-wrap items-center gap-2">
               <motion.p
                 initial={{ opacity: 0 }}
@@ -189,21 +189,27 @@ function Home() {
           </motion.div>
           <motion.div
             style={{ y: y1 }}
-            className="relative mx-auto size-[min(15.5rem,68vw)] sm:size-[min(20rem,52vw)] md:size-[min(28rem,_36vw,_calc(100svh-12rem))] lg:size-[min(30rem,_34vw,_calc(100svh-12rem))]"
+            className="relative mx-auto aspect-square w-[min(15.5rem,68vw)] sm:w-[min(20rem,52vw)] md:w-[min(26rem,34vw)] lg:w-[min(28rem,32vw)]"
           >
+            <div
+              className="pointer-events-none absolute inset-[12%] rounded-full bg-primary-deep/45 blur-2xl"
+              aria-hidden
+            />
             <motion.div
-              className="absolute inset-[4%] overflow-hidden rounded-full bg-white shadow-lift"
-              initial={{ scale: 0.92, opacity: 0 }}
+              className="absolute inset-0"
+              initial={{ scale: 0.86, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.7, ease: EASE, delay: reduce ? 0 : 0.15 }}
+              transition={{ duration: 0.75, ease: EASE, delay: reduce ? 0 : 0.2 }}
             >
-              <img
-                src={menuPhotos.margherita}
-                alt="Grizzly Pizzeria pizza"
-                width={900}
-                height={900}
+              <motion.img
+                src={margheritaHero}
+                alt="Margherita pizza from Grizzly Pizzeria"
+                width={1000}
+                height={1000}
                 fetchPriority="high"
-                className="size-full origin-center scale-[1.65] object-cover object-[46%_52%]"
+                className="size-full object-contain drop-shadow-[0_22px_40px_rgba(0,0,0,0.45)]"
+                animate={reduce ? undefined : { rotate: 360 }}
+                transition={{ duration: 72, repeat: Infinity, ease: "linear" }}
               />
             </motion.div>
             {!reduce &&
@@ -211,7 +217,7 @@ function Home() {
                 <motion.span
                   key={i}
                   aria-hidden
-                  className="absolute text-2xl sm:text-3xl md:text-4xl"
+                  className="absolute z-[1] text-2xl drop-shadow-md sm:text-3xl md:text-4xl"
                   style={{
                     left: `${[8, 82, 10, 84, 48, 68][i]}%`,
                     top: `${[8, 12, 78, 72, 4, 86][i]}%`,

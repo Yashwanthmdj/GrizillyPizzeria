@@ -32,8 +32,8 @@ export function Footer() {
   return (
     <footer className="bg-primary-deep text-primary-foreground grain">
       <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-12">
-        <div className="grid grid-cols-2 gap-8 lg:grid-cols-[1.4fr_1fr_1fr]">
-          <div className="col-span-2 lg:col-span-1">
+        <div className="grid grid-cols-1 gap-8 min-[480px]:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]">
+          <div className="min-[480px]:col-span-2 lg:col-span-1">
             <Logo className="h-9 sm:h-11" />
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-primary-foreground/75">
               A 100% vegetarian kitchen in Madhapur. Big slices, bigger bite — no meat, no egg, no

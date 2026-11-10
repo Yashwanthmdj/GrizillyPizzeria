@@ -183,10 +183,20 @@ function Checkout() {
               transition={{ ease: EASE, duration: 0.5 }}
             />
           </div>
-          <ol className="mt-2 flex justify-between gap-1 text-xs font-semibold sm:text-sm">
+          <ol className="mt-2 flex justify-between gap-1 text-[11px] font-semibold leading-tight sm:text-sm">
             {STEPS.map((x, i) => (
-              <li key={x} className={i <= step ? "text-primary" : "text-muted-foreground"}>
-                {i + 1}. {x}
+              <li
+                key={x}
+                className={cn(
+                  "min-w-0 flex-1 text-center sm:text-left",
+                  i <= step ? "text-primary" : "text-muted-foreground",
+                )}
+              >
+                <span className="sm:hidden">{i + 1}</span>
+                <span className="hidden sm:inline">
+                  {i + 1}. {x}
+                </span>
+                <span className="mt-0.5 block truncate sm:hidden">{x}</span>
               </li>
             ))}
           </ol>

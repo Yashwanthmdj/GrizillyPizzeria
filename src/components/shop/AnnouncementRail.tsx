@@ -17,7 +17,7 @@ export function AnnouncementRail() {
   const db = useDB();
   const reduce = useReducedMotion();
   const rootRef = useRef<HTMLElement>(null);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [slide, setSlide] = useState(0);
 
   const offers = useMemo(() => {
@@ -69,7 +69,7 @@ export function AnnouncementRail() {
     <motion.aside
       ref={rootRef}
       aria-label="Live offers and delivery"
-      className="pointer-events-none fixed right-2 top-[4.25rem] z-30 flex flex-col items-end gap-2 sm:right-4 sm:top-[4.75rem]"
+      className="pointer-events-none fixed right-2 top-[4.25rem] z-30 flex max-w-[calc(100vw-1rem)] flex-col items-end gap-2 sm:right-4 sm:top-[4.75rem]"
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 2.1, duration: 0.5, ease: EASE }}
@@ -166,7 +166,7 @@ export function AnnouncementRail() {
         aria-haspopup="dialog"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "pointer-events-auto flex items-center gap-2 rounded-full border-2 border-cocoa bg-secondary px-3 py-2 text-cocoa shadow-lift",
+          "pointer-events-auto flex max-w-[calc(100vw-1.25rem)] items-center gap-2 rounded-full border-2 border-cocoa bg-secondary px-2.5 py-2 text-cocoa shadow-lift sm:px-3",
           "ring-2 ring-cream/80",
         )}
         animate={
@@ -184,12 +184,13 @@ export function AnnouncementRail() {
         <span className="grid size-7 place-items-center rounded-full bg-primary text-primary-foreground">
           <Sparkles className="size-3.5" />
         </span>
-        <span className="pr-0.5 text-left leading-tight">
+        <span className="hidden pr-0.5 text-left leading-tight min-[380px]:block">
           <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
             Deals
           </span>
           <span className="block font-display text-xs">Tap for offers</span>
         </span>
+        <span className="sr-only">Tap for offers</span>
       </motion.button>
     </motion.aside>
   );

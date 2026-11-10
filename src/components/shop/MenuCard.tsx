@@ -67,11 +67,11 @@ export function MenuCard({
       <div className="flex flex-1 flex-col p-4">
         <div className="flex items-center gap-2">
           <VegDot veg={item.veg} />
-          <h3 className="text-lg font-semibold leading-tight">
+          <h3 className="min-w-0 text-base font-semibold leading-tight sm:text-lg">
             <Link
               to="/menu/$slug"
               params={{ slug: itemSlug(item.name, item.id) }}
-              className="hover:underline"
+              className="line-clamp-2 break-words hover:underline"
             >
               {item.name}
             </Link>

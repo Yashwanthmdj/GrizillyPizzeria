@@ -30,7 +30,7 @@ function CartPage() {
   return (
     <ShopLayout>
       <PageHead title="Your box" />
-      <div className="mx-auto grid max-w-5xl gap-6 px-4 py-10 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,320px)]">
+      <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:px-6 sm:py-10 md:grid-cols-[minmax(0,1fr)_minmax(0,320px)]">
         <ul className="space-y-3">
           {s.cart.length === 0 && (
             <li className="rounded-3xl bg-card p-10 text-center shadow-warm">

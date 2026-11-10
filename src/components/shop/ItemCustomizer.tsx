@@ -74,13 +74,16 @@ export function ItemCustomizer({
                     setTops((x) => (on ? x.filter((y) => y !== t.name) : [...x, t.name]))
                   }
                   className={cn(
-                    "flex min-h-11 items-center gap-1.5 rounded-full border-2 px-3 py-1.5 text-sm transition active:scale-95",
+                    "flex min-h-11 max-w-full items-center gap-1.5 rounded-full border-2 px-2.5 py-1.5 text-left text-sm transition active:scale-95 sm:px-3",
                     on
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border bg-card",
                   )}
                 >
-                  <VegDot veg={t.veg} /> {t.name} <span className="opacity-70">+{t.price}</span>
+                  <VegDot veg={t.veg} />{" "}
+                  <span className="min-w-0 break-words">
+                    {t.name} <span className="opacity-70">+{t.price}</span>
+                  </span>
                 </button>
               );
             })}
