@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import margheritaHero from "@/assets/hero-margherita-circle.webp";
 import { Button } from "@/components/ui/button";
 import { BearMark, EASE, Reveal } from "@/components/brand";
-import { AnnouncementRail } from "@/components/shop/AnnouncementRail";
+import { AnnouncementRail, AnnouncementStrip } from "@/components/shop/AnnouncementRail";
 import { WelcomeCrisp } from "@/components/shop/WelcomeCrisp";
 import { ShopLayout, seo } from "@/components/shop/ShopLayout";
 import { MenuCard } from "@/components/shop/MenuCard";
@@ -102,6 +102,7 @@ function Home() {
   return (
     <ShopLayout>
       <WelcomeCrisp />
+      <AnnouncementStrip />
       <AnnouncementRail />
       <ReadyNotice orders={readyOrders} />
       <section
@@ -109,7 +110,7 @@ function Home() {
         className="relative overflow-x-clip bg-hero grain text-primary-foreground md:flex md:min-h-[calc(100svh-4rem)] md:items-center"
       >
         <div className="mx-auto grid w-full max-w-7xl items-center gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 md:grid-cols-2 md:gap-10 md:py-8 lg:gap-14">
-          <motion.div style={{ y: y2 }} className="relative z-10 min-w-0 pr-14 sm:pr-16 md:pr-0">
+          <motion.div style={{ y: y2 }} className="relative z-10 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <motion.p
                 initial={{ opacity: 0 }}
@@ -260,9 +261,12 @@ function Home() {
             Full menu <ArrowRight className="size-4" />
           </Link>
         </Reveal>
-        <div className="no-scrollbar -mx-4 mt-8 flex snap-x gap-5 overflow-x-auto px-4 pb-4">
+        <div className="no-scrollbar -mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto overflow-y-clip px-4 pb-6 pt-1 sm:gap-5 sm:px-6">
           {favourites.map((m, i) => (
-            <div key={m.id} className="w-[min(18rem,calc(100vw-3rem))] shrink-0 snap-start sm:w-72">
+            <div
+              key={m.id}
+              className="w-[min(16.5rem,calc(100vw-3.5rem))] shrink-0 snap-start overflow-hidden sm:w-72"
+            >
               <MenuCard item={m} outletId={s.outletId} index={i} />
             </div>
           ))}

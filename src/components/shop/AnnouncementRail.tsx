@@ -13,14 +13,9 @@ function offerLabel(code: string, type: "flat" | "percent", value: number, minOr
     : `${code} · ${value}% off · min ${minOrder}`;
 }
 
-export function AnnouncementRail() {
+function useOfferBits() {
   const db = useDB();
-  const reduce = useReducedMotion();
-  const rootRef = useRef<HTMLElement>(null);
-  const [open, setOpen] = useState(false);
-  const [slide, setSlide] = useState(0);
-
-  const offers = useMemo(() => {
+  return useMemo(() => {
     const now = Date.now();
     const live = db.coupons.filter(
       (c) => c.active && c.validFrom <= now && c.validUntil >= now && c.used < c.usageLimit,
@@ -40,6 +35,48 @@ export function AnnouncementRail() {
       { id: "veg", title: "100% veg", detail: "No meat. No egg. Full kitchen vegetarian." },
     ];
   }, [db.coupons, db.loyalty.pointsPerHundred]);
+}
+
+/** Full-width ticker — visible on phone, tablet, and laptop. */
+export function AnnouncementStrip() {
+  const offers = useOfferBits();
+  const notes = [
+    ...offers.map((o) => o.detail),
+    "Order on Zomato & Swiggy",
+    "Tap Deals for coupons",
+  ];
+  const loop = [...notes, ...notes];
+
+  return (
+    <div
+      className="relative z-20 w-full overflow-hidden border-b border-primary-deep/20 bg-secondary text-cocoa"
+      role="status"
+      aria-label="Live announcements"
+    >
+      <div className="ticker ticker-pause flex w-max items-center py-2.5">
+        {loop.map((note, i) => (
+          <span
+            key={`${note}-${i}`}
+            className="flex items-center whitespace-nowrap px-4 text-xs font-semibold sm:text-sm"
+          >
+            <Sparkles className="mr-2 size-3.5 shrink-0 text-primary" aria-hidden />
+            {note}
+            <span className="ml-8 text-primary" aria-hidden>
+              ✦
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function AnnouncementRail() {
+  const reduce = useReducedMotion();
+  const rootRef = useRef<HTMLElement>(null);
+  const [open, setOpen] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const offers = useOfferBits();
 
   useEffect(() => {
     if (!open || offers.length < 2) return;
@@ -69,10 +106,10 @@ export function AnnouncementRail() {
     <motion.aside
       ref={rootRef}
       aria-label="Live offers and delivery"
-      className="pointer-events-none fixed right-2 top-[4.25rem] z-30 flex max-w-[calc(100vw-1rem)] flex-col items-end gap-2 sm:right-4 sm:top-[4.75rem]"
-      initial={{ opacity: 0, x: 24 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: 2.1, duration: 0.5, ease: EASE }}
+      className="pointer-events-none fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-3 z-30 flex max-w-[calc(100vw-1rem)] flex-col items-end gap-2 sm:bottom-auto sm:right-4 sm:top-[5.25rem]"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.6, duration: 0.45, ease: EASE }}
     >
       <AnimatePresence>
         {open && (
@@ -166,14 +203,10 @@ export function AnnouncementRail() {
         aria-haspopup="dialog"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "pointer-events-auto flex max-w-[calc(100vw-1.25rem)] items-center gap-2 rounded-full border-2 border-cocoa bg-secondary px-2.5 py-2 text-cocoa shadow-lift sm:px-3",
+          "pointer-events-auto flex items-center gap-2 rounded-full border-2 border-cocoa bg-secondary px-3 py-2 text-cocoa shadow-lift",
           "ring-2 ring-cream/80",
         )}
-        animate={
-          reduce || open
-            ? { y: 0 }
-            : { y: [0, -8, 0] }
-        }
+        animate={reduce || open ? { y: 0 } : { y: [0, -8, 0] }}
         transition={
           reduce || open
             ? { duration: 0.2 }
@@ -184,13 +217,12 @@ export function AnnouncementRail() {
         <span className="grid size-7 place-items-center rounded-full bg-primary text-primary-foreground">
           <Sparkles className="size-3.5" />
         </span>
-        <span className="hidden pr-0.5 text-left leading-tight min-[380px]:block">
+        <span className="pr-0.5 text-left leading-tight">
           <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
             Deals
           </span>
           <span className="block font-display text-xs">Tap for offers</span>
         </span>
-        <span className="sr-only">Tap for offers</span>
       </motion.button>
     </motion.aside>
   );

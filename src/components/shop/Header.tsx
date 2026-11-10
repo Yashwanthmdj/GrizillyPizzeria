@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { MapPin, ShoppingBag, Menu as MenuIcon, X } from "lucide-react";
+import { ChevronDown, MapPin, ShoppingBag, Menu as MenuIcon, X } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "@/components/brand";
 import { useDB, useSession } from "@/services/store";
@@ -16,8 +16,42 @@ const NAV = [
   { to: "/contact", label: "Contact" },
 ] as const;
 
-export function Header() {
+function OutletSelect({
+  className,
+  useFullName = false,
+}: {
+  className?: string;
+  useFullName?: boolean;
+}) {
   const db = useDB();
+  const session = useSession();
+  return (
+    <label className={cn("relative block w-full", className)}>
+      <MapPin className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-secondary" />
+      <span className="sr-only">Choose outlet</span>
+      <select
+        value={session.outletId ?? ""}
+        onChange={(e) => selectOutlet(e.target.value)}
+        className="h-11 w-full appearance-none rounded-xl border-0 bg-primary-deep py-0 pl-9 pr-10 text-sm font-semibold text-secondary outline-none focus-visible:ring-2 focus-visible:ring-secondary/60"
+      >
+        <option value="" disabled>
+          Pick outlet
+        </option>
+        {db.outlets.map((o) => (
+          <option key={o.id} value={o.id}>
+            {useFullName ? o.name : o.short}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-secondary"
+        aria-hidden
+      />
+    </label>
+  );
+}
+
+export function Header() {
   const session = useSession();
   const { setCartOpen, bump } = useShopUI();
   const [open, setOpen] = useState(false);
@@ -50,24 +84,7 @@ export function Header() {
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <label className="relative hidden items-center sm:flex">
-            <MapPin className="pointer-events-none absolute left-3 size-4 text-secondary" />
-            <span className="sr-only">Choose outlet</span>
-            <select
-              value={session.outletId ?? ""}
-              onChange={(e) => selectOutlet(e.target.value)}
-              className="h-10 appearance-none rounded-full border-2 border-secondary/40 bg-primary-deep pl-9 pr-4 text-sm font-semibold text-secondary outline-none focus-visible:border-secondary"
-            >
-              <option value="" disabled>
-                Pick outlet
-              </option>
-              {db.outlets.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.short}
-                </option>
-              ))}
-            </select>
-          </label>
+          <OutletSelect className="relative hidden w-auto min-w-[9.5rem] sm:block [&_select]:h-10 [&_select]:rounded-full [&_select]:border-2 [&_select]:border-secondary/40" />
           <Link
             to="/account"
             className="hidden h-11 items-center rounded-full px-3 text-sm font-semibold hover:bg-primary-deep sm:inline-flex"
@@ -131,21 +148,7 @@ export function Header() {
           >
             {session.phone ? session.customerName?.split(/\s+/)[0] || "Account" : "Sign in"}
           </Link>
-          <select
-            value={session.outletId ?? ""}
-            onChange={(e) => selectOutlet(e.target.value)}
-            className="mt-2 h-11 rounded-xl bg-primary-deep px-3 font-semibold text-secondary"
-            aria-label="Choose outlet"
-          >
-            <option value="" disabled>
-              Pick outlet
-            </option>
-            {db.outlets.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.name}
-              </option>
-            ))}
-          </select>
+          <OutletSelect className="mt-2" useFullName />
         </div>
       </motion.nav>
     </header>

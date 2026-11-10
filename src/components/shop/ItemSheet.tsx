@@ -29,7 +29,7 @@ export function ItemSheet() {
     <AnimatePresence>
       {item && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4"
+          className="fixed inset-0 z-50 flex w-full max-w-[100vw] items-end justify-center overflow-hidden md:items-center md:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -44,7 +44,7 @@ export function ItemSheet() {
             role="dialog"
             aria-modal="true"
             aria-label={item.name}
-            className="relative flex h-[min(92dvh,100%)] w-full max-w-full flex-col overflow-hidden rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)] shadow-lift md:h-auto md:max-h-[min(90dvh,52rem)] md:max-w-lg md:rounded-3xl"
+            className="relative flex max-h-[92dvh] w-full max-w-[100vw] flex-col overflow-hidden rounded-t-3xl bg-background pb-[env(safe-area-inset-bottom)] shadow-lift md:max-h-[min(90dvh,52rem)] md:max-w-lg md:rounded-3xl"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}

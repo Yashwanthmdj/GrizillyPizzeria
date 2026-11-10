@@ -4,7 +4,7 @@ export function renderErrorPage(): string {
   <head>
     <meta charset="utf-8" />
     <title>This page didn't load</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
     <style>
       body { font: 15px/1.5 "DM Sans", system-ui, sans-serif; background: #FBF3EA; color: #2A1412; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
       .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }

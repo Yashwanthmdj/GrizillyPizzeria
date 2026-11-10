@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { EASE, Img, VegDot } from "@/components/brand";
 import { itemSlug } from "@/services/slug";
@@ -24,28 +24,29 @@ export function MenuCard({
   index?: number;
 }) {
   const { openItem } = useShopUI();
+  const reduce = useReducedMotion();
   const soldOut = !!outletId && !item.availability[outletId];
   return (
     <motion.article
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE, delay: Math.min(index, 8) * 0.05 }}
-      whileHover={{ y: -6 }}
+      whileHover={reduce ? undefined : { y: -4 }}
       className={cn(
-        "group flex h-full flex-col overflow-hidden rounded-3xl bg-card text-left shadow-warm transition-shadow hover:shadow-lift",
+        "group relative flex h-full min-w-0 w-full flex-col overflow-hidden rounded-3xl bg-card text-left shadow-warm transition-shadow hover:shadow-lift",
         soldOut && "opacity-60 grayscale",
       )}
     >
       <button
         type="button"
         onClick={() => openItem(item)}
-        className="relative block aspect-[4/3] overflow-hidden bg-white text-left sm:aspect-[5/4]"
+        className="relative block aspect-[4/3] w-full shrink-0 overflow-hidden bg-white text-left sm:aspect-[5/4]"
         aria-label={`Customize ${item.name}`}
       >
         <Img
           src={item.image}
           alt=""
-          className="size-full transition-transform duration-500 group-hover:scale-110"
+          className="size-full object-contain transition-transform duration-500 group-hover:scale-105"
         />
         {item.badge && (
           <span
@@ -63,10 +64,10 @@ export function MenuCard({
           </span>
         )}
       </button>
-      <div className="flex flex-1 flex-col p-4">
-        <div className="flex items-center gap-2">
+      <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-4">
+        <div className="flex min-w-0 items-center gap-2">
           <VegDot veg={item.veg} />
-          <h3 className="min-w-0 text-base font-semibold leading-tight sm:text-lg">
+          <h3 className="min-w-0 flex-1 text-base font-semibold leading-tight sm:text-lg">
             <Link
               to="/menu/$slug"
               params={{ slug: itemSlug(item.name, item.id) }}
@@ -77,15 +78,18 @@ export function MenuCard({
           </h3>
         </div>
         <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
-        <div className="mt-auto flex items-center justify-between pt-3">
-          <span className="font-display text-xl text-primary">
+        <div className="mt-auto flex min-w-0 items-center gap-2 pt-3">
+          <span className="min-w-0 flex-1 truncate font-display text-lg text-primary sm:text-xl">
             {inr(itemPrice(item, outletId))}
           </span>
           <button
             type="button"
-            onClick={() => openItem(item)}
+            onClick={(e) => {
+              e.stopPropagation();
+              openItem(item);
+            }}
             aria-label={`Add ${item.name}`}
-            className="grid size-11 place-items-center rounded-full bg-primary text-primary-foreground transition group-hover:rotate-90"
+            className="grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition active:scale-95 sm:size-11"
           >
             <Plus className="size-4" />
           </button>
