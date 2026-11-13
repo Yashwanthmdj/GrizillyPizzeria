@@ -139,7 +139,7 @@ let loaderStart = 0;
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  // The 3.5s clock starts when this screen mounts, not when the script is parsed.
+  // The 5.5s clock starts when this screen mounts, not when the script is parsed.
   // On a phone the script can take longer than the intro, which used to dismiss
   // the screen before it painted. The start time is module-scoped so a strict-mode
   // remount keeps the same deadline and schedules a fresh timeout.

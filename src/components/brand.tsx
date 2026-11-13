@@ -7,7 +7,7 @@ const LOGO = "/brand/logo.png";
 const BEAR = "/brand/bear.png";
 
 export const EASE = [0.22, 1, 0.36, 1] as const;
-export const INTRO_MS = 3500;
+export const INTRO_MS = 5500;
 
 export function Logo({ className, onRed = true }: { className?: string; onRed?: boolean }) {
   return (
